@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ asset.symbol }} <span class="badge badge-{{ asset.asset_type }}">{{ asset.exchange }}</span></h2>
+
+<div class="card">
+  <h3>Latest Indicators</h3>
+  {% if indicators %}
+    <p>
+      EMA 20: {{ "%.2f"|format(indicators.ema_20) if indicators.ema_20 is not none else "-" }} |
+      EMA 50: {{ "%.2f"|format(indicators.ema_50) if indicators.ema_50 is not none else "-" }} |
+      RSI 14: {{ "%.2f"|format(indicators.rsi_14) if indicators.rsi_14 is not none else "-" }}<br>
+      MACD: {{ "%.2f"|format(indicators.macd) if indicators.macd is not none else "-" }} |
+      MACD Signal: {{ "%.2f"|format(indicators.macd_signal) if indicators.macd_signal is not none else "-" }}
+    </p>
+  {% else %}
+    <p class="muted">No indicators calculated yet.</p>
+  {% endif %}
+</div>
+
+<h3>Signal History</h3>
+{% if signals %}
+  <table>
+    <thead><tr><th>Time</th><th>Signal</th><th>Entry</th><th>SL</th><th>TP</th><th>Reason</th></tr></thead>
+    <tbody>
+      {% for s in signals %}
+      <tr>
+        <td>{{ s.timestamp }}</td><td class="signal-{{ s.signal }}">{{ s.signal|upper }}</td>
+        <td>{{ "%.2f"|format(s.entry_price) }}</td><td>{{ "%.2f"|format(s.stop_loss) }}</td>
+        <td>{{ "%.2f"|format(s.take_profit) }}</td><td>{{ s.reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="muted">No signals generated yet.</p>
+{% endif %}
+
+<h3 class="section-heading">Price History (Last 30)</h3>
+<table>
+  <thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead>
+  <tbody>
+    {% for p in prices %}
+    <tr>
+      <td>{{ p.timestamp }}</td><td>{{ "%.2f"|format(p.open) }}</td>
+      <td>{{ "%.2f"|format(p.high) }}</td><td>{{ "%.2f"|format(p.low) }}</td>
+      <td>{{ "%.2f"|format(p.close) }}</td><td>{{ "%.0f"|format(p.volume) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

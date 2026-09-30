@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>All Signals History</h2>
+<table>
+  <thead><tr><th>Timestamp</th><th>Symbol</th><th>Type</th><th>Signal</th><th>Entry</th><th>SL</th><th>TP</th><th>Notified</th></tr></thead>
+  <tbody>
+    {% for s in signals %}
+    <tr>
+      <td>{{ s.timestamp }}</td><td><strong>{{ s.symbol }}</strong></td>
+      <td><span class="badge badge-{{ s.asset_type }}">{{ s.asset_type }}</span></td>
+      <td class="signal-{{ s.signal }}">{{ s.signal|upper }}</td>
+      <td>{{ "%.2f"|format(s.entry_price) }}</td><td>{{ "%.2f"|format(s.stop_loss) }}</td>
+      <td>{{ "%.2f"|format(s.take_profit) }}</td><td>{{ "Yes" if s.notified else "No" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

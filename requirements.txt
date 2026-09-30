@@ -1,0 +1,8 @@
+flask
+requests
+pandas
+pandas-ta-classic
+feedparser
+apscheduler
+python-telegram-bot
+python-dotenv

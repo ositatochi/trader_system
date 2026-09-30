@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Nigerian Stocks</h2>
+{% if stock_signals %}
+  {% for s in stock_signals %}
+    <div class="card">
+      <div class="row header-row">
+        <strong>{{ s.symbol }}</strong>
+        <span class="badge badge-stock">{{ s.exchange }}</span>
+        <span class="signal-{{ s.signal }}">{{ s.signal|upper }}</span>
+      </div>
+      <div>Entry: {{ s.currency }} {{ "%.2f"|format(s.entry_price) }} | SL: {{ s.currency }} {{ "%.2f"|format(s.stop_loss) }} | TP: {{ s.currency }} {{ "%.2f"|format(s.take_profit) }}</div>
+      <div class="muted small">{{ s.reason }}</div>
+      <div class="muted micro">{{ s.timestamp }}</div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="muted">No signals yet. Click Refresh.</p>
+{% endif %}
+
+<h2 class="section-heading">Crypto</h2>
+{% if crypto_signals %}
+  {% for s in crypto_signals %}
+    <div class="card">
+      <div class="row header-row">
+        <strong>{{ s.symbol }}</strong>
+        <span class="badge badge-crypto">{{ s.exchange }}</span>
+        <span class="signal-{{ s.signal }}">{{ s.signal|upper }}</span>
+      </div>
+      <div>Entry: {{ s.currency }} {{ "%.2f"|format(s.entry_price) }} | SL: {{ s.currency }} {{ "%.2f"|format(s.stop_loss) }} | TP: {{ s.currency }} {{ "%.2f"|format(s.take_profit) }}</div>
+      <div class="muted small">{{ s.reason }}</div>
+      <div class="muted micro">{{ s.timestamp }}</div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="muted">No signals yet. Click Refresh.</p>
+{% endif %}
+{% endblock %}
