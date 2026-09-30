@@ -7,7 +7,7 @@
   <label>Strategy<select name="strategy" required>{% for name in strategies %}<option value="{{ name }}" {{ "selected" if name == selected_strategy else "" }}>{{ name.replace('_', ' ')|title }}</option>{% endfor %}</select></label>
   <label>From<input name="start_date" type="date" value="{{ request.args.get('start_date', '') }}"></label>
   <label>To<input name="end_date" type="date" value="{{ request.args.get('end_date', '') }}"></label>
-  <button class="btn primary" type="submit">Run backtest</button>
+  <button class="btn primary" type="submit" aria-label="Run strategy backtest" data-loading="Running...">Run backtest</button>
 </form>
 {% else %}<p class="muted">No assets available to backtest. <a href="/watchlist">Add one to your watchlist</a>.</p>{% endif %}
 

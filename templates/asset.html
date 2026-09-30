@@ -52,13 +52,14 @@
     </tbody>
   </table></div>
 {% else %}
-  <p class="muted">No signals generated yet.</p>
+  <p class="muted">No signals generated yet. <a href="/">Run Refresh</a> or <a href="/watchlist">review the watchlist</a>.</p>
 {% endif %}
 
 <h3 class="section-heading">Price History (Last 30)</h3>
 <div class="table-wrap"><table>
   <thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead>
   <tbody>
+    {% if not prices %}<tr><td colspan="6" class="muted">No price history yet. <a href="/">Run Refresh</a> or <a href="/watchlist">review the watchlist</a>.</td></tr>{% endif %}
     {% for p in prices %}
     <tr>
       <td>{{ p.timestamp }}</td><td>{{ "%.2f"|format(p.open) }}</td>
@@ -81,7 +82,11 @@
       if (!items.length) {
         const empty = document.createElement("li");
         empty.className = "muted";
-        empty.textContent = "No matching news yet. News refreshes with the daily scheduler.";
+        empty.append(document.createTextNode("No matching news yet. News refreshes with the daily scheduler. "));
+        const watchlist = document.createElement("a");
+        watchlist.href = "/watchlist";
+        watchlist.textContent = "Review watchlist";
+        empty.append(watchlist);
         list.append(empty);
         return;
       }
@@ -105,7 +110,15 @@
         list.append(row);
       }
     } catch (_) {
-      list.textContent = "News could not be loaded.";
+      list.replaceChildren();
+      const empty = document.createElement("li");
+      empty.className = "muted";
+      empty.append(document.createTextNode("News could not be loaded. "));
+      const diagnostics = document.createElement("a");
+      diagnostics.href = "/diagnostics";
+      diagnostics.textContent = "Check diagnostics";
+      empty.append(diagnostics);
+      list.append(empty);
     }
   });
 </script>

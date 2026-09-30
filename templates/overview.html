@@ -24,7 +24,7 @@
         <tr><td>{{ mover.symbol }}</td><td class="{{ 'signal-buy' if mover.change_pct >= 0 else 'signal-sell' }}">{{ "%+.2f"|format(mover.change_pct) }}%</td><td>{{ "%.4f"|format(mover.last_price) }}</td></tr>
       {% endfor %}</tbody>
     </table></div>
-    {% else %}<p class="muted">Crypto market data is unavailable.</p>{% endif %}
+    {% else %}<p class="muted">Crypto market data is unavailable. <a href="/diagnostics">Check diagnostics</a>.</p>{% endif %}
   </div>
 </section>
 

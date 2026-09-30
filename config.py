@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+VERSION = "0.3.0"
+
 NGN_API_KEY = os.getenv("NGN_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")

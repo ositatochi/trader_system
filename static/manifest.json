@@ -4,6 +4,7 @@
   "start_url": "/",
   "scope": "/",
   "lang": "en",
+  "version": "0.3.0",
   "display": "standalone",
   "background_color": "#00a86b",
   "theme_color": "#00a86b",

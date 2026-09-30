@@ -8,7 +8,7 @@
   <label>Type<select name="asset_type" required><option value="stock">Stock</option><option value="crypto">Crypto</option></select></label>
   <label>Exchange<input name="exchange" required placeholder="NGX or BINANCE"></label>
   <label>Currency<input name="currency" required placeholder="NGN or USDT"></label>
-  <button class="btn primary" type="submit">Add and fetch</button>
+  <button class="btn primary" type="submit" aria-label="Add asset and fetch prices" data-loading="Fetching...">Add and fetch</button>
 </form>
 
 <h3>Tracked Assets</h3>
@@ -23,10 +23,10 @@
       <td>{{ "Active" if asset.active else "Inactive" }}</td>
       <td>
         <form action="/watchlist/toggle/{{ asset.id }}" method="POST" class="inline-form">
-          <button class="btn small" type="submit" aria-label="{{ 'Deactivate' if asset.active else 'Activate' }} {{ asset.symbol }}">{{ "Deactivate" if asset.active else "Activate" }}</button>
+          <button class="btn small" type="submit" aria-label="{{ 'Deactivate' if asset.active else 'Activate' }} {{ asset.symbol }}" data-loading="Updating...">{{ "Deactivate" if asset.active else "Activate" }}</button>
         </form>
         <form action="/watchlist/delete/{{ asset.id }}" method="POST" class="inline-form" data-confirm="Delete {{ asset.symbol }} and its stored data?">
-          <button class="btn small" type="submit" aria-label="Delete {{ asset.symbol }}">Delete</button>
+          <button class="btn small" type="submit" aria-label="Delete {{ asset.symbol }}" data-loading="Deleting...">Delete</button>
         </form>
       </td>
     </tr>

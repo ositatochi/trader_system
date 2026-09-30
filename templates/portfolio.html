@@ -8,8 +8,8 @@
   <label>Asset type<select name="asset_type"><option value="">All</option><option value="stock" {{ "selected" if filters.asset_type == "stock" else "" }}>Stock</option><option value="crypto" {{ "selected" if filters.asset_type == "crypto" else "" }}>Crypto</option></select></label>
   <label>From<input name="start_date" type="date" value="{{ filters.start_date }}"></label>
   <label>To<input name="end_date" type="date" value="{{ filters.end_date }}"></label>
-  <button class="btn primary" type="submit">Filter</button>
-  <button class="btn" type="submit" formaction="/api/portfolio.csv">Export CSV</button>
+  <button class="btn primary" type="submit" aria-label="Filter portfolio">Filter</button>
+  <button class="btn" type="submit" formaction="/api/portfolio.csv" aria-label="Export filtered portfolio as CSV">Export CSV</button>
 </form>
 
 <section class="summary-grid">
@@ -28,7 +28,7 @@
   <label>Quantity<input name="quantity" type="number" min="0.000001" step="any" required></label>
   <label>Entry date<input name="entry_date" type="date" value="{{ today }}" required></label>
   <label>Notes<input name="notes" maxlength="500"></label>
-  <button class="btn primary" type="submit">Add position</button>
+  <button class="btn primary" type="submit" aria-label="Add portfolio position" data-loading="Adding...">Add position</button>
 </form>
 {% else %}
 <p class="muted">No active assets. <a href="/watchlist">Add one to your watchlist</a>.</p>
@@ -54,17 +54,17 @@
       <td>{{ "%.4f"|format(position.quantity) }}</td><td>{{ "%.2f"|format(position.pnl) }}</td>
       <td>{{ position.entry_date }}</td>
       <td>
-        <form action="/portfolio/close/{{ position.id }}" method="POST" class="inline-form">
+        <form action="/portfolio/close/{{ position.id }}" method="POST" class="inline-form" data-loading-form>
           <input name="exit_price" type="number" min="0.000001" step="any" placeholder="Exit price" required aria-label="Exit price for {{ position.symbol }}">
           <input name="exit_date" type="date" value="{{ today }}" required aria-label="Exit date for {{ position.symbol }}">
-          <button class="btn small" type="submit" aria-label="Close {{ position.symbol }} position">Close</button>
+          <button class="btn small" type="submit" aria-label="Close {{ position.symbol }} position" data-loading="Closing...">Close</button>
         </form>
-        <form action="/portfolio/delete/{{ position.id }}" method="POST" class="inline-form"><button class="btn small" type="submit" aria-label="Delete {{ position.symbol }} position">Delete</button></form>
+        <form action="/portfolio/delete/{{ position.id }}" method="POST" class="inline-form" data-confirm="Delete {{ position.symbol }} position?"><button class="btn small" type="submit" aria-label="Delete {{ position.symbol }} position" data-loading="Deleting...">Delete</button></form>
       </td>
     </tr>
   {% endfor %}</tbody>
 </table></div>
-{% else %}<p class="muted">No open positions yet.</p>{% endif %}
+{% else %}<p class="muted">No open positions match these filters. <a href="/watchlist">Add assets to your watchlist</a> or add a position above.</p>{% endif %}
 
 <h3>Closed Positions</h3>
 {% if closed_positions %}
@@ -74,7 +74,7 @@
     <tr><td>{{ position.symbol }}</td><td>{{ position.side|upper }}</td><td>{{ "%.4f"|format(position.entry_price) }}</td><td>{{ "%.4f"|format(position.exit_price) }}</td><td>{{ "%.4f"|format(position.quantity) }}</td><td>{{ "%.2f"|format(position.pnl) }}</td><td>{{ position.exit_date }}</td></tr>
   {% endfor %}</tbody>
 </table></div>
-{% else %}<p class="muted">No closed positions yet.</p>{% endif %}
+{% else %}<p class="muted">No closed positions match these filters. <a href="/">Run Refresh</a> or adjust the filters above.</p>{% endif %}
 
 <nav class="pagination" aria-label="Portfolio pages">
   {% if prev_url %}<a class="btn" href="{{ prev_url }}" aria-label="Previous page">Previous</a>{% endif %}

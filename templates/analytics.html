@@ -3,7 +3,7 @@
 <h2>Signal Performance</h2>
 <form action="/analytics" method="GET" class="filter-bar">
   <label>Evaluation window<select name="days">{% for option in (7,14,30,60,90,180,365) %}<option value="{{ option }}" {{ "selected" if result.days == option else "" }}>{{ option }} days</option>{% endfor %}</select></label>
-  <button class="btn primary" type="submit">Update</button>
+  <button class="btn primary" type="submit" aria-label="Update analytics">Update</button>
 </form>
 <p class="muted">Signal-quality metric: direction of subsequent price movement within {{ result.days }} days. This is not a live P&amp;L backtest; signals without post-signal bars are excluded from win-rate denominators.</p>
 {% if result.strategies %}

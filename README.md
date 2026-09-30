@@ -1,23 +1,8 @@
-# Trader - Unified NGX + Crypto Analysis System
+# Trader
 
-A Python, Flask, and SQLite decision-support system for Nigerian stocks (NGX) and Binance crypto pairs. It calculates technical indicators, generates BUY/SELL signals, and can send Telegram alerts.
-
-## Features
-
-- Unified tracking for NGX stocks and crypto assets.
-- EMA crossover, RSI, and MACD analysis.
-- Flask dashboard for assets, indicators, and signal history.
-- Telegram signal notifications.
-
-## Requirements
-
-- Python 3.10 or newer
-- A network connection for NGX and Binance market data
-- Optional NGN Market API and Telegram credentials
+Trader is a Flask and SQLite market-analysis dashboard for Nigerian equities and Binance crypto pairs. Version 0.3.0 adds portfolio management, multi-strategy analysis, backtesting, news sentiment, market overview, and progressive web app support.
 
 ## Quickstart
-
-In PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -26,36 +11,113 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Edit `.env` with your API key and Telegram values, then initialize the local database and start the dashboard:
+Set optional NGN Market and Telegram credentials in `.env`, then initialize and run:
 
 ```powershell
 python init_db.py
+python scheduler.py
 python app.py
 ```
 
-Open <http://localhost:5001>. Use the dashboard's **Refresh** button or run `python scheduler.py` to fetch prices, analyze assets, and send pending alerts. The scheduler script runs once per invocation; schedule it with Windows Task Scheduler for recurring updates.
+Open <http://localhost:5001>. The scheduler runs one cycle per invocation; use Windows Task Scheduler for recurring updates.
 
-## Diagnostics and No Data
+## Feature Matrix
 
-Open <http://localhost:5001/diagnostics> to view API credential status, database row counts, the latest rows, and detailed results from a one-symbol NGX and crypto fetch. Select **Run Diagnostics** to make those live requests and see HTTP status and response snippets.
+| Feature | Page or route | Description |
+| --- | --- | --- |
+| Market overview | `/overview` | NGX breadth/ASI proxy, tracked crypto movers, and Fear & Greed |
+| Signals | `/` and `/signals` | EMA, RSI, MACD, and Bollinger strategies with confidence scores |
+| Interactive charts | `/asset/<id>` | Close price, EMA overlays, RSI thresholds, volume, and news |
+| Portfolio | `/portfolio` | Open/closed positions, long/short P&L, risk sizing, filters, and CSV |
+| Watchlist | `/watchlist` | Add, activate, deactivate, or delete tracked assets |
+| Backtesting | `/backtest` | Strategy simulation with stop/target exits, equity curve, and metrics |
+| Analytics | `/analytics` | Per-strategy signal win rate and price-move summary |
+| Diagnostics | `/diagnostics` | Credential state, database counts, recent rows, and fetch output |
+| PWA | `/manifest.json`, `/sw.js` | Install prompt, app shortcuts, shell cache, and offline fallback |
+| Notifications | `/api/alerts/new` | Optional browser alerts and 60-second visible-tab signal refresh |
 
-No data usually means the NGN Market API key is missing or invalid, the API endpoint returned no usable price rows, or the crawler has not run yet. To initialize and fetch data:
+## Overview
 
-1. Copy `.env.example` to `.env` (`cp .env.example .env` in a POSIX shell, or `Copy-Item .env.example .env` in PowerShell) and set `NGN_API_KEY` using the NGN Market free tier at <https://ngnmarket.com>.
+`/overview` is the market summary page for tracked NGX breadth, a simple ASI proxy, tracked Binance movers, and the optional Fear & Greed index. The signals dashboard remains available at `/`.
+
+## Charts
+
+Asset detail pages provide price and EMA overlays, RSI threshold lines, and volume. Historical chart data is served by `/api/asset/<id>/series`.
+
+## Portfolio
+
+Track long and short positions, mark open P&L using the latest close, close/delete positions, and estimate quantity from account risk and stop distance. Filtered portfolio rows can be exported to CSV.
+
+## Watchlist
+
+Add assets at `/watchlist`; new symbols trigger a one-symbol fetch. Toggle assets inactive without deleting their history, or delete an asset and its related records.
+
+## Backtest
+
+Choose an asset, strategy, and date window at `/backtest`. Entries use the next candle open; stop loss is checked before take profit if both touch in one candle. Results exclude fees, slippage, and execution constraints.
+
+## News
+
+Asset pages show cached RSS stories matched to the ticker with a simple positive/negative/neutral word-count tag. The scheduler refreshes feeds for active assets.
+
+## Analytics
+
+`/analytics` measures strategy signal direction against subsequent highs/lows. Signals without later price bars are excluded from the win-rate denominator; this is not a realized-trade return report.
+
+## PWA Install
+
+On supported browsers the install button appears in the top bar after the browser signals that installation is available. The manifest includes direct shortcuts to Signals, Portfolio, and Watchlist.
+
+## Service Worker
+
+The worker caches the app shell and static assets, uses the network first for API requests and the dashboard, and returns a small offline page when a navigation cannot reach the server.
+
+## Rate Limits
+
+Requests use per-host pacing; NGN Market API calls are separated by at least 15 seconds. Successful HTTP responses are cached in SQLite to reduce repeated calls. Provider limits and terms may change.
+
+## Logging
+
+Application logs go to the console and `logs/trader.log`. The rotating log file is capped at 5 MB with three backups.
+
+## No Data and Diagnostics
+
+Open <http://localhost:5001/diagnostics> to check API status, environment settings, database counts, and recent rows. Click **Run Diagnostics** for a one-symbol fetch from each source.
+
+No data usually means `NGN_API_KEY` is missing or invalid, an API response contains no usable price rows, or the crawler has not run. To fix it:
+
+1. Copy `.env.example` to `.env` (`cp .env.example .env` in a POSIX shell, or `Copy-Item .env.example .env` in PowerShell) and set `NGN_API_KEY` from the NGN Market free tier at <https://ngnmarket.com>.
 2. Run `python init_db.py`.
-3. Run `python scheduler.py` and inspect the `[NGX]`, `[Crypto]`, and `[Analyzer]` output.
+3. Run `python scheduler.py` and inspect the `[NGX]`, `[Crypto]`, and `[Analyzer]` logs.
 4. Run `python app.py` and open <http://localhost:5001>.
 
-When the NGN Market API fails or has no price rows, NGX fetching falls back to scraping the latest price from `afx.kwayisi.org`. The **POST `/crawl-now`** endpoint fetches all configured watchlist symbols without running analysis; the dashboard's Diagnostics page includes a crawl button and reports inserted-row counts.
+NGX uses the NGN Market chart API and falls back to scraping the latest price from `afx.kwayisi.org` when the API fails or returns no rows. **POST `/crawl-now`** fetches watchlist prices without analyzing them.
 
-## Theme
+## Theme and Install
 
-Use the moon/sun toggle at the top-left of the navigation bar to switch between dark and light themes. The selection is stored in the browser. The palette uses Nigerian/emerald green, with `#00a86b` as its dark-theme accent.
+Use the moon/sun toggle at the top-right of the navigation bar to switch between dark and light themes; the browser remembers the choice. Both themes use Nigerian/emerald green, with `#00a86b` as the primary dark-theme accent. On supported browsers, the install button appears in the top bar when the app can be installed. The service worker caches the app shell and provides a basic offline page; market APIs still require a network connection.
 
-## Configuration
+## Routes and APIs
 
-`NGX_WATCHLIST` and `CRYPTO_WATCHLIST` are comma-separated symbol lists. Signal thresholds are defined in `config.py`. Telegram notifications are skipped until both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are configured.
+- Pages: `/overview`, `/`, `/assets`, `/asset/<id>`, `/signals`, `/portfolio`, `/watchlist`, `/backtest`, `/analytics`, `/diagnostics`.
+- Operations: `POST /refresh`, `POST /crawl-now`, `POST /portfolio/add`, `POST /portfolio/close/<id>`, `POST /portfolio/delete/<id>`, and watchlist add/toggle/delete routes.
+- APIs: `/api/overview`, `/api/asset/<id>/series`, `/api/asset/<id>/news`, `/api/signals/latest`, `/api/alerts/new`, `/api/signals.csv`, `/api/portfolio.csv`, `/api/backtest`, and `/api/analytics`.
 
-## Notes
+## Free-Tier Limits
 
-Signals are generated from historical daily candles and are informational, not financial advice. API availability, symbol support, and applicable market-data terms may vary. The SQLite database is created as `trader.db` in the project directory and is excluded from Git.
+- NGN Market: plan-dependent; the free tier is documented as 3,000 requests per month. Calls are spaced by at least 15 seconds and successful responses are cached.
+- Binance market data: public endpoints do not require an API key; Binance request-weight limits still apply.
+- Telegram Bot API: no API fee for ordinary bot messaging; Telegram usage limits apply.
+- News RSS: public feeds are free to read; publisher terms and availability apply.
+
+Limits can change; check each provider's current terms before relying on these estimates.
+
+## Logging and Data
+
+Logs are written to `logs/trader.log` with rotation at 5 MB and three backups. SQLite stores market data, positions, news, and API response cache in `trader.db`; runtime files are excluded from Git. Signals and analytics are informational, not investment advice. Backtest results do not model fees, slippage, or order execution.
+
+## Screenshots
+
+- Market overview: screenshot placeholder
+- Portfolio: screenshot placeholder
+- Asset charts: screenshot placeholder

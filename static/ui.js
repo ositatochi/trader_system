@@ -3,6 +3,20 @@
   const notificationButton = document.getElementById("notifications-toggle");
   const seenKey = "trader-seen-alerts";
 
+  document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
+      event.preventDefault();
+      return;
+    }
+    const button = event.submitter;
+    if (!button?.hasAttribute("data-loading")) return;
+    button.disabled = true;
+    button.classList.add("is-loading");
+    button.setAttribute("aria-busy", "true");
+    button.textContent = button.dataset.loading || "Working...";
+  });
+
   window.toast = (message, type = "info") => {
     if (!toastRegion) return;
     const item = document.createElement("div");

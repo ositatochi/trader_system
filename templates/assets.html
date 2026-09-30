@@ -6,6 +6,7 @@
 <div class="table-wrap"><table>
   <thead><tr><th>Symbol</th><th>Exchange</th><th>Currency</th><th>Last Close</th></tr></thead>
   <tbody>
+    {% if not stocks %}<tr><td colspan="4" class="muted">No active NGX assets. <a href="/watchlist">Add one to your watchlist</a>.</td></tr>{% endif %}
     {% for a in stocks %}
     <tr>
       <td><a href="/asset/{{ a.id }}"><strong>{{ a.symbol }}</strong></a></td>
@@ -20,6 +21,7 @@
 <div class="table-wrap"><table>
   <thead><tr><th>Symbol</th><th>Exchange</th><th>Currency</th><th>Last Close</th></tr></thead>
   <tbody>
+    {% if not cryptos %}<tr><td colspan="4" class="muted">No active crypto assets. <a href="/watchlist">Add one to your watchlist</a>.</td></tr>{% endif %}
     {% for a in cryptos %}
     <tr>
       <td><a href="/asset/{{ a.id }}"><strong>{{ a.symbol }}</strong></a></td>

@@ -23,7 +23,10 @@
 </table></div>
 
 <form action="/diagnostics" method="POST">
-  <button type="submit" class="btn primary">Run Diagnostics</button>
+  <button type="submit" class="btn primary" aria-label="Run live diagnostics" data-loading="Checking...">Run Diagnostics</button>
+</form>
+<form action="/crawl-now" method="POST">
+  <button type="submit" class="btn" aria-label="Crawl all watchlist assets" data-loading="Crawling...">Crawl Now</button>
 </form>
 
 {% if output %}
@@ -53,7 +56,7 @@
   </tbody>
 </table></div>
 {% else %}
-<p class="muted">No rows yet.</p>
+<p class="muted">No rows yet. <a href="/">Run Refresh</a> or <a href="/watchlist">go to Watchlist</a>.</p>
 {% endif %}
 {% endfor %}
 {% endblock %}
