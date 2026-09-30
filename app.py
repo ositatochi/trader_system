@@ -16,6 +16,7 @@ import config
 import db
 import diagnostics
 import news
+import overview as overview_service
 import scheduler
 
 app = Flask(__name__)
@@ -43,6 +44,16 @@ def index():
     return render_template(
         "index.html", stock_signals=stock_signals, crypto_signals=crypto_signals
     )
+
+
+@app.route("/overview")
+def overview_page():
+    return render_template("overview.html", overview=overview_service.market_overview())
+
+
+@app.route("/api/overview")
+def overview_api():
+    return jsonify(overview_service.market_overview())
 
 
 @app.route("/assets")

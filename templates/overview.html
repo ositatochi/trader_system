@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Market Overview</h2>
+<section class="summary-grid">
+  <div class="summary-item"><span>Tracked assets</span><strong>{{ overview.total_assets }}</strong></div>
+  <div class="summary-item"><span>NGX gainers</span><strong class="signal-buy">{{ overview.ngx.gainers }}</strong></div>
+  <div class="summary-item"><span>NGX losers</span><strong class="signal-sell">{{ overview.ngx.losers }}</strong></div>
+  <div class="summary-item"><span>Crypto gainers</span><strong class="signal-buy">{{ overview.crypto.gainers }}</strong></div>
+  <div class="summary-item"><span>Crypto losers</span><strong class="signal-sell">{{ overview.crypto.losers }}</strong></div>
+</section>
+
+<section class="overview-grid">
+  <div>
+    <h3>NGX Market Breadth</h3>
+    <p>ASI proxy: <strong>{{ "%.2f"|format(overview.ngx.asi_proxy_change_pct) }}%</strong></p>
+    <canvas id="breadth-chart" aria-label="NGX gainers, losers, and unchanged assets"></canvas>
+  </div>
+  <div>
+    <h3>Crypto Top Movers</h3>
+    {% if overview.crypto.top_movers %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Pair</th><th>24h</th><th>Last price</th></tr></thead>
+      <tbody>{% for mover in overview.crypto.top_movers %}
+        <tr><td>{{ mover.symbol }}</td><td class="{{ 'signal-buy' if mover.change_pct >= 0 else 'signal-sell' }}">{{ "%+.2f"|format(mover.change_pct) }}%</td><td>{{ "%.4f"|format(mover.last_price) }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Crypto market data is unavailable.</p>{% endif %}
+  </div>
+</section>
+
+<section class="summary-item fear-greed">
+  <span>Fear &amp; Greed</span>
+  {% if overview.fear_greed %}<strong>{{ overview.fear_greed.value }} · {{ overview.fear_greed.classification }}</strong>
+  {% else %}<strong class="muted">Unavailable</strong>{% endif %}
+</section>
+
+<script type="application/json" id="breadth-data">{{ {"gainers": overview.ngx.gainers, "losers": overview.ngx.losers, "unchanged": overview.ngx.unchanged}|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
+<script defer>
+  document.addEventListener("DOMContentLoaded", () => {
+    const element = document.getElementById("breadth-chart");
+    const data = JSON.parse(document.getElementById("breadth-data").textContent);
+    const styles = getComputedStyle(document.documentElement);
+    new Chart(element, {
+      type: "bar",
+      data: { labels: ["Gainers", "Losers", "Unchanged"], datasets: [{ data: [data.gainers, data.losers, data.unchanged], backgroundColor: [styles.getPropertyValue("--buy").trim(), styles.getPropertyValue("--sell").trim(), styles.getPropertyValue("--muted").trim()] }] },
+      options: { responsive: true, plugins: { legend: { display: false } } },
+    });
+  });
+</script>
+{% endblock %}
