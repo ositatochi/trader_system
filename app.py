@@ -1,12 +1,18 @@
 from pathlib import Path
+import os
+import secrets
 
-from flask import Flask, abort, redirect, render_template, request, send_from_directory, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, send_from_directory, url_for
 
+import adapters.crypto
+import adapters.ngx
+import config
 import db
 import diagnostics
 import scheduler
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY") or secrets.token_hex(32)
 BASE_DIR = Path(__file__).parent
 
 
@@ -89,9 +95,9 @@ def diagnostics_page():
     output = diagnostics.run_diagnostics() if request.method == "POST" else None
     snapshot = output or diagnostics.database_snapshot()
     env = {
-        "NGN_API_KEY": bool(__import__("config").NGN_API_KEY),
-        "TELEGRAM_BOT_TOKEN": bool(__import__("config").TELEGRAM_BOT_TOKEN),
-        "TELEGRAM_CHAT_ID": bool(__import__("config").TELEGRAM_CHAT_ID),
+        "NGN_API_KEY": bool(config.NGN_API_KEY),
+        "TELEGRAM_BOT_TOKEN": bool(config.TELEGRAM_BOT_TOKEN),
+        "TELEGRAM_CHAT_ID": bool(config.TELEGRAM_CHAT_ID),
     }
     return render_template(
         "diagnostics.html",
@@ -100,6 +106,25 @@ def diagnostics_page():
         latest=snapshot["latest"],
         output=output,
     )
+
+
+@app.route("/crawl-now", methods=["POST"])
+def crawl_now():
+    totals = {"NGX": 0, "Crypto": 0}
+    for label, fetch in (
+        ("NGX", lambda: adapters.ngx.fetch_prices(config.NGX_WATCHLIST)),
+        ("Crypto", lambda: adapters.crypto.fetch_prices(config.CRYPTO_WATCHLIST)),
+    ):
+        try:
+            result = fetch()
+            totals[label] = result["rows"]
+        except Exception as error:
+            flash(f"{label} crawl failed: {error}", "error")
+    flash(
+        f"Crawl complete: {totals['NGX']} NGX and {totals['Crypto']} crypto rows inserted.",
+        "success",
+    )
+    return redirect(url_for("diagnostics_page"))
 
 
 @app.route("/manifest.json")

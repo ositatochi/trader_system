@@ -16,6 +16,7 @@ def fetch_prices(symbols=None):
 
     results = []
     headers = {}
+    headers["User-Agent"] = config.USER_AGENT
     if config.NGN_API_KEY:
         headers["Authorization"] = f"Bearer {config.NGN_API_KEY}"
 
@@ -42,7 +43,7 @@ def _fetch_symbol(conn, symbol, headers):
     api_url = f"https://api.ngnmarket.com/v1/companies/{symbol}/chart"
     response = None
     try:
-        response = requests.get(api_url, headers=headers, timeout=10)
+        response = requests.get(api_url, headers=headers, timeout=config.REQUEST_TIMEOUT)
         snippet = response.text[:200]
         endpoints.append(
             {"endpoint": api_url, "status": response.status_code, "snippet": snippet, "error": None}
@@ -96,6 +97,13 @@ def _fetch_symbol(conn, symbol, headers):
     else:
         if not errors:
             errors.append("API returned no price rows")
+        if not config.NGX_SCRAPE_FALLBACK:
+            return {
+                "symbol": symbol,
+                "rows": 0,
+                "error": "; ".join(errors),
+                "responses": endpoints,
+            }
         api_status = endpoints[0]["status"] if endpoints else None
         api_error = "; ".join(errors)
         print(
@@ -106,7 +114,11 @@ def _fetch_symbol(conn, symbol, headers):
         scrape_url = f"https://afx.kwayisi.org/ngx/{symbol.lower()}.html"
         scrape_response = None
         try:
-            scrape_response = requests.get(scrape_url, timeout=10)
+            scrape_response = requests.get(
+                    scrape_url,
+                    headers={"User-Agent": config.USER_AGENT},
+                    timeout=config.REQUEST_TIMEOUT,
+                )
             status = scrape_response.status_code
             snippet = scrape_response.text[:200]
             price = _extract_latest_price(scrape_response.text) if status == 200 else None

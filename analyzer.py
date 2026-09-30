@@ -92,6 +92,10 @@ def analyze_all():
             """
             df = pd.read_sql_query(query, conn, params=(asset["id"],))
             if len(df) < 50:
+                print(
+                    f"[Analyzer] symbol={asset['symbol']} bars={len(df)} "
+                    "indicators=skipped signal=NONE"
+                )
                 continue
 
             df = compute_indicators(df)
@@ -116,6 +120,11 @@ def analyze_all():
             )
 
             signal = generate_signal(df, asset["asset_type"])
+            signal_label = signal["signal"].upper() if signal else "NONE"
+            print(
+                f"[Analyzer] symbol={asset['symbol']} bars={len(df)} "
+                f"indicators=ok signal={signal_label}"
+            )
             if signal:
                 timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
                     "%Y-%m-%d %H:%M:%S"

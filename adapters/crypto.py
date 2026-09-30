@@ -22,7 +22,8 @@ def fetch_prices(symbols=None):
                 response = requests.get(
                     endpoint,
                     params={"symbol": symbol, "interval": "1d", "limit": 200},
-                    timeout=10,
+                    headers={"User-Agent": config.USER_AGENT},
+                    timeout=config.REQUEST_TIMEOUT,
                 )
                 snippet = response.text[:200]
                 if response.status_code != 200:
