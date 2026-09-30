@@ -270,6 +270,35 @@ def signals():
     )
 
 
+@app.route("/api/signals/latest")
+def latest_signals_api():
+    with db.get_conn() as conn:
+        records = conn.execute(
+            """
+            SELECT s.id, s.timestamp, s.signal, s.entry_price, s.stop_loss, s.take_profit,
+                   s.reason, s.confidence, a.symbol, a.exchange, a.currency, a.asset_type
+            FROM signals s JOIN assets a ON s.asset_id = a.id
+            ORDER BY s.id DESC LIMIT 20
+            """
+        ).fetchall()
+    return jsonify([dict(record) for record in records])
+
+
+@app.route("/api/alerts/new")
+def new_alerts_api():
+    with db.get_conn() as conn:
+        records = conn.execute(
+            """
+            SELECT s.id, s.timestamp, s.signal, s.reason, s.confidence,
+                   a.symbol, a.asset_type
+            FROM signals s JOIN assets a ON s.asset_id = a.id
+            WHERE s.notified = 0 AND s.signal IN ('buy', 'sell')
+            ORDER BY s.id DESC LIMIT 20
+            """
+        ).fetchall()
+    return jsonify([dict(record) for record in records])
+
+
 def _signal_filter_sql(filters):
     conditions = []
     params = []

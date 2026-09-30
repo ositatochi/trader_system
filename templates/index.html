@@ -2,6 +2,7 @@
 {% block content %}
 <h2>Nigerian Stocks</h2>
 {% if stock_signals %}
+  <div id="stock-signals">
   {% for s in stock_signals %}
     <div class="card">
       <div class="row header-row stack-on-mobile">
@@ -15,12 +16,16 @@
       <div class="muted micro">{{ s.timestamp }}</div>
     </div>
   {% endfor %}
+  </div>
 {% else %}
+  <div id="stock-signals">
   <p class="muted">No signals yet. Click Refresh.</p>
+  </div>
 {% endif %}
 
 <h2 class="section-heading">Crypto</h2>
 {% if crypto_signals %}
+  <div id="crypto-signals">
   {% for s in crypto_signals %}
     <div class="card">
       <div class="row header-row stack-on-mobile">
@@ -34,7 +39,10 @@
       <div class="muted micro">{{ s.timestamp }}</div>
     </div>
   {% endfor %}
+  </div>
 {% else %}
+  <div id="crypto-signals">
   <p class="muted">No signals yet. Click Refresh.</p>
+  </div>
 {% endif %}
 {% endblock %}

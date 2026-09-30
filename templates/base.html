@@ -32,6 +32,7 @@
       <form action="/refresh" method="POST" class="refresh-form">
         <button type="submit" class="btn primary small" aria-label="Refresh data"><span class="action-icon" aria-hidden="true">↻</span><span class="action-label">Refresh</span></button>
       </form>
+      <button id="notifications-toggle" class="icon-button" type="button" aria-label="Enable browser notifications" title="Enable browser notifications">🔔</button>
       <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
     </div>
   </div>
@@ -47,6 +48,8 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
+  <div id="toasts" class="toast-region" aria-live="polite" aria-atomic="false"></div>
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
+  <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
 </body>
 </html>
