@@ -55,6 +55,70 @@ def assets():
     return render_template("assets.html", stocks=stocks, cryptos=cryptos)
 
 
+@app.route("/watchlist")
+def watchlist():
+    with db.get_conn() as conn:
+        assets = conn.execute(
+            """
+            SELECT a.*,
+                   (SELECT close FROM prices WHERE asset_id = a.id
+                    ORDER BY timestamp DESC LIMIT 1) AS last_close
+            FROM assets a ORDER BY a.asset_type, a.symbol
+            """
+        ).fetchall()
+    return render_template("watchlist.html", assets=assets)
+
+
+@app.route("/watchlist/add", methods=["POST"])
+def watchlist_add():
+    symbol = request.form.get("symbol", "").strip().upper()
+    asset_type = request.form.get("asset_type", "")
+    exchange = request.form.get("exchange", "").strip().upper()
+    currency = request.form.get("currency", "").strip().upper()
+    if not symbol or len(symbol) > 32 or asset_type not in ("stock", "crypto") or not exchange or not currency:
+        flash("Provide a symbol, stock/crypto type, exchange, and currency.", "error")
+        return redirect(url_for("watchlist"))
+
+    try:
+        with db.get_conn() as conn:
+            conn.execute(
+                "INSERT INTO assets (symbol, name, asset_type, exchange, currency, active) VALUES (?, ?, ?, ?, ?, 1)",
+                (symbol, symbol, asset_type, exchange, currency),
+            )
+    except Exception as error:
+        flash(f"Could not add {symbol}: {error}", "error")
+        return redirect(url_for("watchlist"))
+
+    try:
+        if asset_type == "crypto":
+            result = adapters.crypto.fetch_prices(symbol)
+        else:
+            result = adapters.ngx.fetch_prices(symbol)
+        flash(f"Added {symbol}; fetched {result['rows']} price rows.", "success")
+    except Exception as error:
+        flash(f"Added {symbol}, but its initial fetch failed: {error}", "error")
+    return redirect(url_for("watchlist"))
+
+
+@app.route("/watchlist/toggle/<int:asset_id>", methods=["POST"])
+def watchlist_toggle(asset_id):
+    with db.get_conn() as conn:
+        conn.execute(
+            "UPDATE assets SET active = CASE active WHEN 1 THEN 0 ELSE 1 END WHERE id = ?",
+            (asset_id,),
+        )
+    flash("Watchlist status updated.", "success")
+    return redirect(url_for("watchlist"))
+
+
+@app.route("/watchlist/delete/<int:asset_id>", methods=["POST"])
+def watchlist_delete(asset_id):
+    with db.get_conn() as conn:
+        conn.execute("DELETE FROM assets WHERE id = ?", (asset_id,))
+    flash("Asset deleted.", "success")
+    return redirect(url_for("watchlist"))
+
+
 @app.route("/asset/<int:asset_id>")
 def asset_detail(asset_id):
     with db.get_conn() as conn:

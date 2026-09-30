@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Watchlist</h2>
+
+<h3>Add Asset</h3>
+<form action="/watchlist/add" method="POST" class="form-grid">
+  <label>Symbol<input name="symbol" maxlength="32" required placeholder="BTCUSDT"></label>
+  <label>Type<select name="asset_type" required><option value="stock">Stock</option><option value="crypto">Crypto</option></select></label>
+  <label>Exchange<input name="exchange" required placeholder="NGX or BINANCE"></label>
+  <label>Currency<input name="currency" required placeholder="NGN or USDT"></label>
+  <button class="btn primary" type="submit">Add and fetch</button>
+</form>
+
+<h3>Tracked Assets</h3>
+{% if assets %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Symbol</th><th>Type</th><th>Exchange</th><th>Currency</th><th>Last close</th><th>Status</th><th>Actions</th></tr></thead>
+  <tbody>{% for asset in assets %}
+    <tr>
+      <td><a href="/asset/{{ asset.id }}">{{ asset.symbol }}</a></td>
+      <td>{{ asset.asset_type }}</td><td>{{ asset.exchange }}</td><td>{{ asset.currency }}</td>
+      <td>{{ "%.4f"|format(asset.last_close) if asset.last_close is not none else "-" }}</td>
+      <td>{{ "Active" if asset.active else "Inactive" }}</td>
+      <td>
+        <form action="/watchlist/toggle/{{ asset.id }}" method="POST" class="inline-form">
+          <button class="btn small" type="submit" aria-label="{{ 'Deactivate' if asset.active else 'Activate' }} {{ asset.symbol }}">{{ "Deactivate" if asset.active else "Activate" }}</button>
+        </form>
+        <form action="/watchlist/delete/{{ asset.id }}" method="POST" class="inline-form" data-confirm="Delete {{ asset.symbol }} and its stored data?">
+          <button class="btn small" type="submit" aria-label="Delete {{ asset.symbol }}">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<p class="muted">Your watchlist is empty. Add an asset above to start tracking it.</p>
+{% endif %}
+{% endblock %}
