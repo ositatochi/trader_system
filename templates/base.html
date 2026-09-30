@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#00a86b">
   <title>Trader - NGX + Crypto Analysis</title>
+  <link rel="apple-touch-icon" href="/static/icon.png">
   <script>
     (() => {
       let theme = "dark";
@@ -32,6 +33,7 @@
       <form action="/refresh" method="POST" class="refresh-form">
         <button type="submit" class="btn primary small" aria-label="Refresh data"><span class="action-icon" aria-hidden="true">↻</span><span class="action-label">Refresh</span></button>
       </form>
+      <button id="install-app" class="icon-button" type="button" aria-label="Install Trader" title="Install Trader" hidden>⬇</button>
       <button id="notifications-toggle" class="icon-button" type="button" aria-label="Enable browser notifications" title="Enable browser notifications">🔔</button>
       <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
     </div>
@@ -49,6 +51,27 @@
     {% block content %}{% endblock %}
   </main>
   <div id="toasts" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    }
+    (() => {
+      let installEvent;
+      const button = document.getElementById("install-app");
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        installEvent = event;
+        button.hidden = false;
+      });
+      button.addEventListener("click", async () => {
+        if (!installEvent) return;
+        await installEvent.prompt();
+        installEvent = null;
+        button.hidden = true;
+      });
+      window.addEventListener("appinstalled", () => { button.hidden = true; });
+    })();
+  </script>
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
 </body>

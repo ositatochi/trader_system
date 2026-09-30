@@ -2,8 +2,16 @@
   "name": "Trader",
   "short_name": "Trader",
   "start_url": "/",
+  "scope": "/",
+  "lang": "en",
   "display": "standalone",
   "background_color": "#00a86b",
   "theme_color": "#00a86b",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "categories": ["finance"],
+  "shortcuts": [
+    {"name": "Signals", "short_name": "Signals", "url": "/signals"},
+    {"name": "Portfolio", "short_name": "Portfolio", "url": "/portfolio"},
+    {"name": "Watchlist", "short_name": "Watchlist", "url": "/watchlist"}
+  ]
 }

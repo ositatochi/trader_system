@@ -593,6 +593,11 @@ def manifest():
     return send_from_directory(BASE_DIR / "static", "manifest.json")
 
 
+@app.route("/sw.js")
+def service_worker():
+    return send_from_directory(BASE_DIR / "static", "sw.js", mimetype="application/javascript")
+
+
 @app.route("/refresh", methods=["POST"])
 def refresh():
     scheduler.run_daily()
