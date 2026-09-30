@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Diagnostics</h2>
+
+<h3>Environment</h3>
+<table>
+  <thead><tr><th>Variable</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for name, is_set in env.items() %}
+    <tr><td>{{ name }}</td><td>{{ "Set" if is_set else "Missing" }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h3>Database Rows</h3>
+<table>
+  <thead><tr><th>Table</th><th>Rows</th></tr></thead>
+  <tbody>
+    {% for table, count in counts.items() %}
+    <tr><td>{{ table }}</td><td>{{ count }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<form action="/diagnostics" method="POST">
+  <button type="submit" class="btn primary">Run Diagnostics</button>
+</form>
+
+{% if output %}
+<h3>Fetch Results</h3>
+{% for result in output.results %}
+  <div class="card">
+    <strong>{{ result.source }}: {{ result.symbol or "No symbol" }}</strong>
+    <div>Rows inserted: {{ result.rows }}</div>
+    <div>Error: {{ result.error or "None" }}</div>
+    {% for response in result.responses %}
+      <div class="small">HTTP {{ response.status or "No response" }} | {{ response.endpoint }}</div>
+      <pre>{{ response.snippet }}</pre>
+    {% endfor %}
+  </div>
+{% endfor %}
+{% endif %}
+
+{% for table, rows in latest.items() %}
+<h3>Latest {{ table }}</h3>
+{% if rows %}
+<div class="table-wrap"><table>
+  <thead><tr>{% for column in rows[0].keys() %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>
+    {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<p class="muted">No rows yet.</p>
+{% endif %}
+{% endfor %}
+{% endblock %}

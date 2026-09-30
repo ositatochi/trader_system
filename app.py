@@ -1,8 +1,9 @@
 from pathlib import Path
 
-from flask import Flask, abort, redirect, render_template, send_from_directory, url_for
+from flask import Flask, abort, redirect, render_template, request, send_from_directory, url_for
 
 import db
+import diagnostics
 import scheduler
 
 app = Flask(__name__)
@@ -81,6 +82,24 @@ def signals():
             """
         ).fetchall()
     return render_template("signals.html", signals=all_signals)
+
+
+@app.route("/diagnostics", methods=["GET", "POST"])
+def diagnostics_page():
+    output = diagnostics.run_diagnostics() if request.method == "POST" else None
+    snapshot = output or diagnostics.database_snapshot()
+    env = {
+        "NGN_API_KEY": bool(__import__("config").NGN_API_KEY),
+        "TELEGRAM_BOT_TOKEN": bool(__import__("config").TELEGRAM_BOT_TOKEN),
+        "TELEGRAM_CHAT_ID": bool(__import__("config").TELEGRAM_CHAT_ID),
+    }
+    return render_template(
+        "diagnostics.html",
+        env=env,
+        counts=snapshot["counts"],
+        latest=snapshot["latest"],
+        output=output,
+    )
 
 
 @app.route("/manifest.json")
