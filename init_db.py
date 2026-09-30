@@ -1,4 +1,7 @@
 import db
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS assets (
@@ -77,6 +80,12 @@ CREATE TABLE IF NOT EXISTS news_cache (
     FOREIGN KEY(asset_id) REFERENCES assets(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS api_cache (
+    url TEXT PRIMARY KEY,
+    body TEXT,
+    fetched_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_prices_asset_ts ON prices(asset_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_signals_ts ON signals(timestamp);
 CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
@@ -98,7 +107,7 @@ def main():
             if name not in columns:
                 conn.execute(f"ALTER TABLE signals ADD COLUMN {name} {declaration}")
     conn.close()
-    print("DB initialized.")
+    logger.info("DB initialized")
 
 
 if __name__ == "__main__":

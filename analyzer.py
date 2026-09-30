@@ -6,6 +6,9 @@ import pandas_ta_classic as ta
 
 import config
 import db
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def compute_indicators(df):
@@ -182,10 +185,7 @@ def analyze_all():
             """
             df = pd.read_sql_query(query, conn, params=(asset["id"],))
             if len(df) < 50:
-                print(
-                    f"[Analyzer] symbol={asset['symbol']} bars={len(df)} "
-                    "indicators=skipped signal=NONE"
-                )
+                logger.info("symbol=%s bars=%s indicators=skipped signal=NONE", asset["symbol"], len(df))
                 continue
 
             df = compute_indicators(df)
@@ -211,10 +211,7 @@ def analyze_all():
 
             signal = aggregate_signals(df, asset["asset_type"])
             signal_label = signal["signal"].upper()
-            print(
-                f"[Analyzer] symbol={asset['symbol']} bars={len(df)} "
-                f"indicators=ok signal={signal_label}"
-            )
+            logger.info("symbol=%s bars=%s indicators=ok signal=%s", asset["symbol"], len(df), signal_label)
             if signal["signal"] in ("buy", "sell"):
                 timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
                     "%Y-%m-%d %H:%M:%S"
@@ -246,7 +243,7 @@ def analyze_all():
 
 def main():
     count = analyze_all()
-    print(f"Analysis complete. Signals generated: {count}")
+    logger.info("Analysis complete. Signals generated: %s", count)
 
 
 if __name__ == "__main__":

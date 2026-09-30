@@ -6,6 +6,16 @@ import requests
 import config
 import db
 from adapters.common import get_or_create_asset, upsert_price
+from cache import get_or_fetch
+from logger import get_logger
+from rate_limit import wrap_request
+
+logger = get_logger(__name__)
+
+
+def _request(url, **kwargs):
+    wrap_request(url)
+    return requests.get(url, **kwargs)
 
 
 def fetch_prices(symbols=None):
@@ -43,7 +53,11 @@ def _fetch_symbol(conn, symbol, headers):
     api_url = f"https://api.ngnmarket.com/v1/companies/{symbol}/chart"
     response = None
     try:
-        response = requests.get(api_url, headers=headers, timeout=config.REQUEST_TIMEOUT)
+        response = get_or_fetch(
+            api_url,
+            900,
+            lambda: _request(api_url, headers=headers, timeout=config.REQUEST_TIMEOUT),
+        )
         snippet = response.text[:200]
         endpoints.append(
             {"endpoint": api_url, "status": response.status_code, "snippet": snippet, "error": None}
@@ -59,10 +73,7 @@ def _fetch_symbol(conn, symbol, headers):
         else:
             error = f"HTTP {response.status_code}"
             errors.append(error)
-            print(
-                f"[NGX] symbol={symbol} endpoint={api_url} "
-                f"status={response.status_code} error={error}"
-            )
+            logger.warning("symbol=%s endpoint=%s status=%s error=%s", symbol, api_url, response.status_code, error)
     except (requests.RequestException, ValueError, TypeError) as error:
         status = response.status_code if response is not None else None
         snippet = response.text[:200] if response is not None else ""
@@ -70,7 +81,7 @@ def _fetch_symbol(conn, symbol, headers):
             {"endpoint": api_url, "status": status, "snippet": snippet, "error": str(error)}
         )
         errors.append(str(error))
-        print(f"[NGX] symbol={symbol} endpoint={api_url} status={status} error={error}")
+        logger.exception("symbol=%s endpoint=%s status=%s error=%s", symbol, api_url, status, error)
 
     inserted = 0
     asset_id = None
@@ -106,19 +117,20 @@ def _fetch_symbol(conn, symbol, headers):
             }
         api_status = endpoints[0]["status"] if endpoints else None
         api_error = "; ".join(errors)
-        print(
-            f"[NGX] symbol={symbol} endpoint={api_url} status={api_status} "
-            f"error={api_error}; trying scrape"
-        )
+        logger.info("symbol=%s endpoint=%s status=%s error=%s; trying scrape", symbol, api_url, api_status, api_error)
 
         scrape_url = f"https://afx.kwayisi.org/ngx/{symbol.lower()}.html"
         scrape_response = None
         try:
-            scrape_response = requests.get(
+            scrape_response = get_or_fetch(
+                scrape_url,
+                3600,
+                lambda: _request(
                     scrape_url,
                     headers={"User-Agent": config.USER_AGENT},
                     timeout=config.REQUEST_TIMEOUT,
-                )
+                ),
+            )
             status = scrape_response.status_code
             snippet = scrape_response.text[:200]
             price = _extract_latest_price(scrape_response.text) if status == 200 else None
@@ -147,9 +159,7 @@ def _fetch_symbol(conn, symbol, headers):
                 errors = []
             else:
                 errors.append(scrape_error)
-                print(
-                    f"[NGX] symbol={symbol} endpoint={scrape_url} status={status} error={scrape_error}"
-                )
+                logger.warning("symbol=%s endpoint=%s status=%s error=%s", symbol, scrape_url, status, scrape_error)
         except (requests.RequestException, ValueError, TypeError) as error:
             status = scrape_response.status_code if scrape_response is not None else None
             snippet = scrape_response.text[:200] if scrape_response is not None else ""
@@ -157,7 +167,7 @@ def _fetch_symbol(conn, symbol, headers):
                 {"endpoint": scrape_url, "status": status, "snippet": snippet, "error": str(error)}
             )
             errors.append(str(error))
-            print(f"[NGX] symbol={symbol} endpoint={scrape_url} status={status} error={error}")
+            logger.exception("symbol=%s endpoint=%s status=%s error=%s", symbol, scrape_url, status, error)
 
     return {
         "symbol": symbol,

@@ -4,6 +4,9 @@ import alerter
 import analyzer
 import config
 import news
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def run_daily():
@@ -15,13 +18,13 @@ def run_daily():
         ("News", news.refresh_news_for_assets),
     )
     for name, stage in stages:
-        print(f"[{name}] Starting")
+        logger.info("[%s] Starting", name)
         try:
             result = stage()
-            print(f"[{name}] Complete: {result}")
+            logger.info("[%s] Complete: %s", name, result)
         except Exception as error:
-            print(f"[{name}] ERROR: {error}")
-    print("[Scheduler] Done")
+            logger.exception("[%s] ERROR: %s", name, error)
+    logger.info("[Scheduler] Done")
 
 
 def main():

@@ -6,6 +6,9 @@ import pandas as pd
 import analyzer
 import config
 import db
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def run_backtest(asset_id, strategy_name, start_date=None, end_date=None, initial_capital=10000):
@@ -127,7 +130,7 @@ def _summary(symbol, strategy_name, trades, initial_capital, equity_curve=None):
 
 
 def print_summary(result):
-    print(
+    logger.info(
         "Metric          Value\n"
         f"Trades          {result['total_trades']}\n"
         f"Win rate        {result['win_rate']:.2f}%\n"
@@ -144,4 +147,4 @@ if __name__ == "__main__":
         result = run_backtest(first["id"], config.ENABLED_STRATEGIES[0])
         print_summary(result)
     else:
-        print("No active assets to backtest.")
+        logger.info("No active assets to backtest")

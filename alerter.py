@@ -2,6 +2,10 @@ import requests
 
 import config
 import db
+from logger import get_logger
+from rate_limit import wrap_request
+
+logger = get_logger(__name__)
 
 
 def format_signal(asset_symbol, exchange, currency, signal_row):
@@ -18,11 +22,12 @@ def format_signal(asset_symbol, exchange, currency, signal_row):
 
 def send_telegram(text):
     if not config.TELEGRAM_BOT_TOKEN or not config.TELEGRAM_CHAT_ID:
-        print("[Alerter] Telegram tokens missing, skipping push.")
+        logger.warning("Telegram tokens missing, skipping push")
         return False
 
     url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
     try:
+        wrap_request(url)
         response = requests.post(
             url,
             json={"chat_id": config.TELEGRAM_CHAT_ID, "text": text},
@@ -30,7 +35,7 @@ def send_telegram(text):
         )
         return response.status_code == 200
     except requests.RequestException as error:
-        print(f"[Alerter] Telegram error: {error}")
+        logger.exception("Telegram error: %s", error)
         return False
 
 

@@ -6,6 +6,11 @@ import requests
 
 import config
 import db
+from cache import get_or_fetch
+from logger import get_logger
+from rate_limit import wrap_request
+
+logger = get_logger(__name__)
 
 FEEDS = {
     "crypto": (
@@ -39,10 +44,10 @@ def fetch_news(symbol, asset_type):
     symbol_match = re.compile(rf"(?<![A-Z0-9]){re.escape(symbol)}(?![A-Z0-9])", re.IGNORECASE)
     for url in FEEDS.get(asset_type, FEEDS["stock"]):
         try:
-            response = requests.get(
+            response = get_or_fetch(
                 url,
-                headers={"User-Agent": config.USER_AGENT},
-                timeout=config.REQUEST_TIMEOUT,
+                1800,
+                lambda: _request(url),
             )
             response.raise_for_status()
             parsed = feedparser.parse(response.content)
@@ -63,7 +68,7 @@ def fetch_news(symbol, asset_type):
                     }
                 )
         except (requests.RequestException, ValueError, TypeError) as error:
-            print(f"[News] symbol={symbol} endpoint={url} error={error}")
+            logger.exception("symbol=%s endpoint=%s error=%s", symbol, url, error)
 
     unique = {item["link"]: item for item in results}
     return sorted(unique.values(), key=lambda item: item["published"], reverse=True)[:10]
@@ -89,6 +94,15 @@ def refresh_news_for_assets():
                     )
                     inserted += cursor.rowcount
         except Exception as error:
-            print(f"[News] symbol={asset['symbol']} refresh error={error}")
-    print(f"[News] inserted={inserted}")
+            logger.exception("symbol=%s refresh error=%s", asset["symbol"], error)
+    logger.info("inserted=%s", inserted)
     return inserted
+
+
+def _request(url):
+    wrap_request(url)
+    return requests.get(
+        url,
+        headers={"User-Agent": config.USER_AGENT},
+        timeout=config.REQUEST_TIMEOUT,
+    )
