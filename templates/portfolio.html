@@ -2,6 +2,16 @@
 {% block content %}
 <h2>Portfolio</h2>
 
+<form action="/portfolio" method="GET" class="filter-bar">
+  <label>Symbol<input name="symbol" value="{{ filters.symbol }}" placeholder="Search symbol"></label>
+  <label>Position side<select name="side"><option value="">All</option><option value="long" {{ "selected" if filters.side == "long" else "" }}>Long</option><option value="short" {{ "selected" if filters.side == "short" else "" }}>Short</option></select></label>
+  <label>Asset type<select name="asset_type"><option value="">All</option><option value="stock" {{ "selected" if filters.asset_type == "stock" else "" }}>Stock</option><option value="crypto" {{ "selected" if filters.asset_type == "crypto" else "" }}>Crypto</option></select></label>
+  <label>From<input name="start_date" type="date" value="{{ filters.start_date }}"></label>
+  <label>To<input name="end_date" type="date" value="{{ filters.end_date }}"></label>
+  <button class="btn primary" type="submit">Filter</button>
+  <button class="btn" type="submit" formaction="/api/portfolio.csv">Export CSV</button>
+</form>
+
 <section class="summary-grid">
   <div class="summary-item"><span>Total open value</span><strong>{{ "%.2f"|format(summary.open_value) }}</strong></div>
   <div class="summary-item"><span>Unrealized P&amp;L</span><strong class="{{ 'signal-buy' if summary.unrealized_pnl >= 0 else 'signal-sell' }}">{{ "%.2f"|format(summary.unrealized_pnl) }}</strong></div>
@@ -65,6 +75,12 @@
   {% endfor %}</tbody>
 </table></div>
 {% else %}<p class="muted">No closed positions yet.</p>{% endif %}
+
+<nav class="pagination" aria-label="Portfolio pages">
+  {% if prev_url %}<a class="btn" href="{{ prev_url }}" aria-label="Previous page">Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if next_url %}<a class="btn" href="{{ next_url }}" aria-label="Next page">Next</a>{% endif %}
+</nav>
 
 <script>
   (() => {

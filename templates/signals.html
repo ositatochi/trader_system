@@ -1,9 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>All Signals History</h2>
+<form action="/signals" method="GET" class="filter-bar">
+  <label>Symbol<input name="symbol" value="{{ filters.symbol }}" placeholder="Search symbol"></label>
+  <label>Signal<select name="signal_type"><option value="">All</option>{% for value in ('buy','sell','hold') %}<option value="{{ value }}" {{ "selected" if filters.signal_type == value else "" }}>{{ value|upper }}</option>{% endfor %}</select></label>
+  <label>Asset type<select name="asset_type"><option value="">All</option>{% for value in ('stock','crypto') %}<option value="{{ value }}" {{ "selected" if filters.asset_type == value else "" }}>{{ value|title }}</option>{% endfor %}</select></label>
+  <label>From<input name="start_date" type="date" value="{{ filters.start_date }}"></label>
+  <label>To<input name="end_date" type="date" value="{{ filters.end_date }}"></label>
+  <button class="btn primary" type="submit">Filter</button>
+  <button class="btn" type="submit" formaction="/api/signals.csv">Export CSV</button>
+</form>
 <div class="table-wrap"><table>
   <thead><tr><th>Timestamp</th><th>Symbol</th><th>Type</th><th>Signal</th><th>Confidence</th><th>Entry</th><th>SL</th><th>TP</th><th>Notified</th></tr></thead>
   <tbody>
+    {% if not signals %}<tr><td colspan="9" class="muted">No matching signals. <a href="/watchlist">Review your watchlist</a> or <a href="/">run refresh</a>.</td></tr>{% endif %}
     {% for s in signals %}
     <tr>
       <td>{{ s.timestamp }}</td><td><strong>{{ s.symbol }}</strong></td>
@@ -16,4 +26,9 @@
     {% endfor %}
   </tbody>
 </table></div>
+<nav class="pagination" aria-label="Signal pages">
+  {% if prev_url %}<a class="btn" href="{{ prev_url }}" aria-label="Previous page">Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if next_url %}<a class="btn" href="{{ next_url }}" aria-label="Next page">Next</a>{% endif %}
+</nav>
 {% endblock %}

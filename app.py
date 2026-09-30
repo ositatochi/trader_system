@@ -1,9 +1,12 @@
 from pathlib import Path
+import csv
+import io
+import math
 import os
 import secrets
 from datetime import date
 
-from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
+from flask import Flask, Response, abort, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 
 import adapters.crypto
 import adapters.ngx
@@ -236,31 +239,133 @@ def asset_news(asset_id):
 
 @app.route("/signals")
 def signals():
+    filters = {
+        "symbol": request.args.get("symbol", "").strip(),
+        "signal_type": request.args.get("signal_type", ""),
+        "asset_type": request.args.get("asset_type", ""),
+        "start_date": request.args.get("start_date", ""),
+        "end_date": request.args.get("end_date", ""),
+    }
+    conditions, params = _signal_filter_sql(filters)
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    page = max(request.args.get("page", 1, type=int), 1)
+    per_page = 50
     with db.get_conn() as conn:
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM signals s JOIN assets a ON s.asset_id = a.id {where}", params
+        ).fetchone()[0]
         all_signals = conn.execute(
-            """
+            f"""
             SELECT s.*, a.symbol, a.exchange, a.currency, a.asset_type
             FROM signals s JOIN assets a ON s.asset_id = a.id
-            ORDER BY s.id DESC LIMIT 100
-            """
+            {where} ORDER BY s.id DESC LIMIT ? OFFSET ?
+            """,
+            (*params, per_page, (page - 1) * per_page),
         ).fetchall()
-    return render_template("signals.html", signals=all_signals)
+    pages = max(1, math.ceil(total / per_page))
+    return render_template(
+        "signals.html", signals=all_signals, filters=filters, page=page, pages=pages,
+        prev_url=url_for("signals", **filters, page=page - 1) if page > 1 else None,
+        next_url=url_for("signals", **filters, page=page + 1) if page < pages else None,
+    )
+
+
+def _signal_filter_sql(filters):
+    conditions = []
+    params = []
+    if filters["symbol"]:
+        conditions.append("a.symbol LIKE ?")
+        params.append(f"%{filters['symbol']}%")
+    if filters["signal_type"] in ("buy", "sell", "hold"):
+        conditions.append("s.signal = ?")
+        params.append(filters["signal_type"])
+    if filters["asset_type"] in ("stock", "crypto"):
+        conditions.append("a.asset_type = ?")
+        params.append(filters["asset_type"])
+    if filters["start_date"]:
+        conditions.append("date(s.timestamp) >= date(?)")
+        params.append(filters["start_date"])
+    if filters["end_date"]:
+        conditions.append("date(s.timestamp) <= date(?)")
+        params.append(filters["end_date"])
+    return conditions, params
+
+
+@app.route("/api/signals.csv")
+def signals_csv():
+    filters = {
+        "symbol": request.args.get("symbol", "").strip(),
+        "signal_type": request.args.get("signal_type", ""),
+        "asset_type": request.args.get("asset_type", ""),
+        "start_date": request.args.get("start_date", ""),
+        "end_date": request.args.get("end_date", ""),
+    }
+    conditions, params = _signal_filter_sql(filters)
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+    def rows():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(("timestamp", "symbol", "asset_type", "signal", "confidence", "entry_price", "stop_loss", "take_profit", "strategy", "reason"))
+        yield buffer.getvalue()
+        with db.get_conn() as conn:
+            records = conn.execute(
+                f"""
+                SELECT s.timestamp, a.symbol, a.asset_type, s.signal, s.confidence,
+                       s.entry_price, s.stop_loss, s.take_profit, s.strategy, s.reason
+                FROM signals s JOIN assets a ON s.asset_id = a.id
+                {where} ORDER BY s.id DESC
+                """,
+                params,
+            )
+            for record in records:
+                buffer = io.StringIO()
+                csv.writer(buffer).writerow(tuple(record))
+                yield buffer.getvalue()
+
+    return Response(rows(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=signals.csv"})
 
 
 @app.route("/portfolio", methods=["GET"])
 def portfolio():
+    filters = {
+        "symbol": request.args.get("symbol", "").strip(),
+        "side": request.args.get("side", ""),
+        "asset_type": request.args.get("asset_type", ""),
+        "start_date": request.args.get("start_date", ""),
+        "end_date": request.args.get("end_date", ""),
+    }
+    conditions = []
+    params = []
+    if filters["symbol"]:
+        conditions.append("a.symbol LIKE ?")
+        params.append(f"%{filters['symbol']}%")
+    if filters["side"] in ("long", "short"):
+        conditions.append("p.side = ?")
+        params.append(filters["side"])
+    if filters["asset_type"] in ("stock", "crypto"):
+        conditions.append("a.asset_type = ?")
+        params.append(filters["asset_type"])
+    if filters["start_date"]:
+        conditions.append("date(p.entry_date) >= date(?)")
+        params.append(filters["start_date"])
+    if filters["end_date"]:
+        conditions.append("date(p.entry_date) <= date(?)")
+        params.append(filters["end_date"])
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     with db.get_conn() as conn:
         assets = conn.execute(
             "SELECT id, symbol, asset_type, currency FROM assets WHERE active = 1 ORDER BY symbol"
         ).fetchall()
         positions = conn.execute(
-            """
+            f"""
             SELECT p.*, a.symbol, a.asset_type, a.currency,
                    (SELECT close FROM prices WHERE asset_id = p.asset_id
                     ORDER BY timestamp DESC LIMIT 1) AS last_close
             FROM positions p JOIN assets a ON a.id = p.asset_id
-            ORDER BY p.id DESC
-            """
+            {where} ORDER BY p.id DESC
+            """,
+            params,
         ).fetchall()
 
     open_positions = []
@@ -291,6 +396,11 @@ def portfolio():
         "realized_pnl": realized_pnl,
         "win_rate": (winners / closed_count * 100) if closed_count else 0,
     }
+    page = max(request.args.get("page", 1, type=int), 1)
+    per_page = 50
+    pages = max(1, math.ceil(max(len(open_positions), len(closed_positions)) / per_page))
+    open_positions = open_positions[(page - 1) * per_page : page * per_page]
+    closed_positions = closed_positions[(page - 1) * per_page : page * per_page]
     return render_template(
         "portfolio.html",
         assets=assets,
@@ -298,7 +408,66 @@ def portfolio():
         closed_positions=closed_positions,
         summary=summary,
         today=date.today().isoformat(),
+        filters=filters,
+        page=page,
+        pages=pages,
+        prev_url=url_for("portfolio", **filters, page=page - 1) if page > 1 else None,
+        next_url=url_for("portfolio", **filters, page=page + 1) if page < pages else None,
     )
+
+
+@app.route("/api/portfolio.csv")
+def portfolio_csv():
+    filters = {
+        "symbol": request.args.get("symbol", "").strip(),
+        "side": request.args.get("side", ""),
+        "asset_type": request.args.get("asset_type", ""),
+        "start_date": request.args.get("start_date", ""),
+        "end_date": request.args.get("end_date", ""),
+    }
+    conditions = []
+    params = []
+    if filters["symbol"]:
+        conditions.append("a.symbol LIKE ?")
+        params.append(f"%{filters['symbol']}%")
+    if filters["side"] in ("long", "short"):
+        conditions.append("p.side = ?")
+        params.append(filters["side"])
+    if filters["asset_type"] in ("stock", "crypto"):
+        conditions.append("a.asset_type = ?")
+        params.append(filters["asset_type"])
+    if filters["start_date"]:
+        conditions.append("date(p.entry_date) >= date(?)")
+        params.append(filters["start_date"])
+    if filters["end_date"]:
+        conditions.append("date(p.entry_date) <= date(?)")
+        params.append(filters["end_date"])
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+    def rows():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(("symbol", "asset_type", "side", "status", "entry_date", "entry_price", "exit_date", "exit_price", "quantity", "pnl", "notes"))
+        yield buffer.getvalue()
+        with db.get_conn() as conn:
+            records = conn.execute(
+                f"""
+                SELECT p.*, a.symbol, a.asset_type,
+                       (SELECT close FROM prices WHERE asset_id = p.asset_id ORDER BY timestamp DESC LIMIT 1) AS last_close
+                FROM positions p JOIN assets a ON a.id = p.asset_id
+                {where} ORDER BY p.id DESC
+                """,
+                params,
+            )
+            for record in records:
+                direction = 1 if record["side"] == "long" else -1
+                mark = record["exit_price"] if record["status"] == "closed" else record["last_close"]
+                pnl = (mark - record["entry_price"]) * record["quantity"] * direction if mark is not None else 0
+                buffer = io.StringIO()
+                csv.writer(buffer).writerow((record["symbol"], record["asset_type"], record["side"], record["status"], record["entry_date"], record["entry_price"], record["exit_date"], record["exit_price"], record["quantity"], pnl, record["notes"]))
+                yield buffer.getvalue()
+
+    return Response(rows(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=portfolio.csv"})
 
 
 @app.route("/portfolio/add", methods=["POST"])
