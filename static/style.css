@@ -50,7 +50,7 @@ body {
   padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding-top: max(12px, env(safe-area-inset-top));
   z-index: 100;
 }
@@ -62,19 +62,28 @@ body {
   text-decoration: none;
 }
 
-.brand { margin-right: auto; }
+.topbar .brand { flex-shrink: 0; }
+
+.topbar nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+  margin-right: 14px;
+}
 
 .topbar nav a {
   display: inline-block;
   color: var(--muted);
   text-decoration: none;
-  margin-left: 12px;
-  padding: 10px;
+  padding: 10px 4px;
   font-size: 14px;
 }
 
 .topbar nav a:hover { color: var(--accent); }
-.refresh-form { display: inline; }
+.nav-icon { display: none; }
+.refresh-form { display: inline; margin: 0; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
 
 .container {
   max-width: 900px;
@@ -133,10 +142,11 @@ h2 { font-size: 22px; }
   min-height: 40px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--bg-elev);
   color: var(--fg);
   cursor: pointer;
+  font-size: 18px;
 }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -150,23 +160,13 @@ a { color: var(--accent); text-decoration: none; }
 .micro { font-size: 10px; }
 .container { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
 
-@media (max-width: 600px) {
-  .topbar {
-    display: grid;
-    grid-template-columns: 40px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-  }
-  .brand { grid-column: 2; margin: 0; }
-  .topbar nav {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-  }
-  .topbar nav a { margin: 0; padding: 10px 0; }
-  .refresh-form, .topbar nav .btn { width: 100%; }
+@media (max-width: 700px) {
+  .topbar { gap: 8px; padding-right: 10px; padding-left: 10px; }
+  .topbar nav { gap: 8px; margin-right: 0; }
+  .topbar nav a { padding: 10px 2px; }
+  .nav-icon { display: inline; }
+  .nav-label, .action-label { display: none; }
+  .topbar-actions .btn { box-sizing: border-box; width: 40px; min-width: 40px; padding: 0; }
   .container { padding: 10px 10px calc(30px + env(safe-area-inset-bottom)); }
   h2 { font-size: 18px; }
   .stack-on-mobile { flex-wrap: wrap; justify-content: flex-start; }

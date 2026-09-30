@@ -18,17 +18,19 @@
 </head>
 <body>
   <div class="topbar">
-    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
     <div class="brand"><a href="/">Trader</a></div>
     <nav>
-      <a href="/">Home</a>
-      <a href="/assets">Assets</a>
-      <a href="/signals">Signals</a>
-      <a href="/diagnostics">Diagnostics</a>
-      <form action="/refresh" method="POST" class="refresh-form">
-        <button type="submit" class="btn primary small">Refresh</button>
-      </form>
+      <a href="/" aria-label="Home"><span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Home</span></a>
+      <a href="/assets" aria-label="Assets"><span class="nav-icon" aria-hidden="true">▦</span><span class="nav-label">Assets</span></a>
+      <a href="/signals" aria-label="Signals"><span class="nav-icon" aria-hidden="true">↗</span><span class="nav-label">Signals</span></a>
+      <a href="/diagnostics" aria-label="Diagnostics"><span class="nav-icon" aria-hidden="true">◉</span><span class="nav-label">Diagnostics</span></a>
     </nav>
+    <div class="topbar-actions">
+      <form action="/refresh" method="POST" class="refresh-form">
+        <button type="submit" class="btn primary small" aria-label="Refresh data"><span class="action-icon" aria-hidden="true">↻</span><span class="action-label">Refresh</span></button>
+      </form>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+    </div>
   </div>
   <main class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
