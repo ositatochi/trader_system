@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Portfolio</h2>
+
+<section class="summary-grid">
+  <div class="summary-item"><span>Total open value</span><strong>{{ "%.2f"|format(summary.open_value) }}</strong></div>
+  <div class="summary-item"><span>Unrealized P&amp;L</span><strong class="{{ 'signal-buy' if summary.unrealized_pnl >= 0 else 'signal-sell' }}">{{ "%.2f"|format(summary.unrealized_pnl) }}</strong></div>
+  <div class="summary-item"><span>Realized P&amp;L</span><strong class="{{ 'signal-buy' if summary.realized_pnl >= 0 else 'signal-sell' }}">{{ "%.2f"|format(summary.realized_pnl) }}</strong></div>
+  <div class="summary-item"><span>Win rate</span><strong>{{ "%.1f"|format(summary.win_rate) }}%</strong></div>
+</section>
+
+<h3>Add Position</h3>
+{% if assets %}
+<form action="/portfolio/add" method="POST" class="form-grid">
+  <label>Asset<select name="asset_id" required>{% for asset in assets %}<option value="{{ asset.id }}">{{ asset.symbol }} ({{ asset.currency }})</option>{% endfor %}</select></label>
+  <label>Side<select name="side" required><option value="long">Long</option><option value="short">Short</option></select></label>
+  <label>Entry price<input name="entry_price" type="number" min="0.000001" step="any" required></label>
+  <label>Quantity<input name="quantity" type="number" min="0.000001" step="any" required></label>
+  <label>Entry date<input name="entry_date" type="date" value="{{ today }}" required></label>
+  <label>Notes<input name="notes" maxlength="500"></label>
+  <button class="btn primary" type="submit">Add position</button>
+</form>
+{% else %}
+<p class="muted">No active assets. <a href="/watchlist">Add one to your watchlist</a>.</p>
+{% endif %}
+
+<h3>Position Size Calculator</h3>
+<div class="calculator form-grid">
+  <label>Account balance<input id="calc-account" type="number" min="0" step="any"></label>
+  <label>Risk %<input id="calc-risk" type="number" min="0" max="100" step="any" value="1"></label>
+  <label>Entry price<input id="calc-entry" type="number" min="0" step="any"></label>
+  <label>Stop price<input id="calc-stop" type="number" min="0" step="any"></label>
+  <p>Suggested quantity: <strong id="calc-result">-</strong></p>
+</div>
+
+<h3>Open Positions</h3>
+{% if open_positions %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Asset</th><th>Side</th><th>Entry</th><th>Mark</th><th>Qty</th><th>Unrealized P&amp;L</th><th>Entry date</th><th>Actions</th></tr></thead>
+  <tbody>{% for position in open_positions %}
+    <tr>
+      <td>{{ position.symbol }}</td><td>{{ position.side|upper }}</td>
+      <td>{{ "%.4f"|format(position.entry_price) }}</td><td>{{ "%.4f"|format(position.mark_price) }}</td>
+      <td>{{ "%.4f"|format(position.quantity) }}</td><td>{{ "%.2f"|format(position.pnl) }}</td>
+      <td>{{ position.entry_date }}</td>
+      <td>
+        <form action="/portfolio/close/{{ position.id }}" method="POST" class="inline-form">
+          <input name="exit_price" type="number" min="0.000001" step="any" placeholder="Exit price" required aria-label="Exit price for {{ position.symbol }}">
+          <input name="exit_date" type="date" value="{{ today }}" required aria-label="Exit date for {{ position.symbol }}">
+          <button class="btn small" type="submit" aria-label="Close {{ position.symbol }} position">Close</button>
+        </form>
+        <form action="/portfolio/delete/{{ position.id }}" method="POST" class="inline-form"><button class="btn small" type="submit" aria-label="Delete {{ position.symbol }} position">Delete</button></form>
+      </td>
+    </tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}<p class="muted">No open positions yet.</p>{% endif %}
+
+<h3>Closed Positions</h3>
+{% if closed_positions %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Asset</th><th>Side</th><th>Entry</th><th>Exit</th><th>Qty</th><th>Realized P&amp;L</th><th>Closed</th></tr></thead>
+  <tbody>{% for position in closed_positions %}
+    <tr><td>{{ position.symbol }}</td><td>{{ position.side|upper }}</td><td>{{ "%.4f"|format(position.entry_price) }}</td><td>{{ "%.4f"|format(position.exit_price) }}</td><td>{{ "%.4f"|format(position.quantity) }}</td><td>{{ "%.2f"|format(position.pnl) }}</td><td>{{ position.exit_date }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}<p class="muted">No closed positions yet.</p>{% endif %}
+
+<script>
+  (() => {
+    const fields = ["calc-account", "calc-risk", "calc-entry", "calc-stop"].map((id) => document.getElementById(id));
+    const output = document.getElementById("calc-result");
+    const update = () => {
+      const [account, risk, entry, stop] = fields.map((field) => Number(field.value));
+      const distance = Math.abs(entry - stop);
+      output.textContent = account > 0 && risk > 0 && distance > 0
+        ? (account * risk / 100 / distance).toFixed(4)
+        : "-";
+    };
+    fields.forEach((field) => field.addEventListener("input", update));
+  })();
+</script>
+{% endblock %}

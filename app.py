@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import secrets
+from datetime import date
 
 from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 
@@ -118,6 +119,112 @@ def signals():
             """
         ).fetchall()
     return render_template("signals.html", signals=all_signals)
+
+
+@app.route("/portfolio", methods=["GET"])
+def portfolio():
+    with db.get_conn() as conn:
+        assets = conn.execute(
+            "SELECT id, symbol, asset_type, currency FROM assets WHERE active = 1 ORDER BY symbol"
+        ).fetchall()
+        positions = conn.execute(
+            """
+            SELECT p.*, a.symbol, a.asset_type, a.currency,
+                   (SELECT close FROM prices WHERE asset_id = p.asset_id
+                    ORDER BY timestamp DESC LIMIT 1) AS last_close
+            FROM positions p JOIN assets a ON a.id = p.asset_id
+            ORDER BY p.id DESC
+            """
+        ).fetchall()
+
+    open_positions = []
+    closed_positions = []
+    open_value = unrealized_pnl = realized_pnl = winners = 0.0
+    closed_count = 0
+    for position in positions:
+        item = dict(position)
+        if item["status"] == "open":
+            mark = item["last_close"] if item["last_close"] is not None else item["entry_price"]
+            direction = 1 if item["side"] == "long" else -1
+            item["pnl"] = (mark - item["entry_price"]) * item["quantity"] * direction
+            item["mark_price"] = mark
+            open_value += abs(mark * item["quantity"])
+            unrealized_pnl += item["pnl"]
+            open_positions.append(item)
+        else:
+            direction = 1 if item["side"] == "long" else -1
+            item["pnl"] = (item["exit_price"] - item["entry_price"]) * item["quantity"] * direction
+            realized_pnl += item["pnl"]
+            winners += item["pnl"] > 0
+            closed_count += 1
+            closed_positions.append(item)
+
+    summary = {
+        "open_value": open_value,
+        "unrealized_pnl": unrealized_pnl,
+        "realized_pnl": realized_pnl,
+        "win_rate": (winners / closed_count * 100) if closed_count else 0,
+    }
+    return render_template(
+        "portfolio.html",
+        assets=assets,
+        open_positions=open_positions,
+        closed_positions=closed_positions,
+        summary=summary,
+        today=date.today().isoformat(),
+    )
+
+
+@app.route("/portfolio/add", methods=["POST"])
+def portfolio_add():
+    try:
+        asset_id = int(request.form["asset_id"])
+        side = request.form["side"]
+        entry_price = float(request.form["entry_price"])
+        quantity = float(request.form["quantity"])
+        entry_date = date.fromisoformat(request.form["entry_date"]).isoformat()
+        if side not in ("long", "short") or entry_price <= 0 or quantity <= 0:
+            raise ValueError("Choose a side and enter positive price and quantity values.")
+        with db.get_conn() as conn:
+            asset = conn.execute("SELECT id FROM assets WHERE id = ? AND active = 1", (asset_id,)).fetchone()
+            if asset is None:
+                raise ValueError("Select an active asset.")
+            conn.execute(
+                "INSERT INTO positions (asset_id, side, entry_price, quantity, entry_date, notes) VALUES (?, ?, ?, ?, ?, ?)",
+                (asset_id, side, entry_price, quantity, entry_date, request.form.get("notes", "").strip()),
+            )
+        flash("Position added.", "success")
+    except (KeyError, TypeError, ValueError) as error:
+        flash(f"Could not add position: {error}", "error")
+    return redirect(url_for("portfolio"))
+
+
+@app.route("/portfolio/close/<int:pos_id>", methods=["POST"])
+def portfolio_close(pos_id):
+    try:
+        exit_price = float(request.form["exit_price"])
+        exit_date = date.fromisoformat(request.form["exit_date"]).isoformat()
+        if exit_price <= 0:
+            raise ValueError("Exit price must be positive.")
+        with db.get_conn() as conn:
+            cursor = conn.execute(
+                "UPDATE positions SET exit_price = ?, exit_date = ?, status = 'closed' WHERE id = ? AND status = 'open'",
+                (exit_price, exit_date, pos_id),
+            )
+            if not cursor.rowcount:
+                raise ValueError("Open position not found.")
+        flash("Position closed.", "success")
+    except (KeyError, TypeError, ValueError) as error:
+        flash(f"Could not close position: {error}", "error")
+    return redirect(url_for("portfolio"))
+
+
+@app.route("/portfolio/delete/<int:pos_id>", methods=["POST"])
+def portfolio_delete(pos_id):
+    with db.get_conn() as conn:
+        conn.execute("DELETE FROM positions WHERE id = ?", (pos_id,))
+    flash("Position deleted.", "success")
+    return redirect(url_for("portfolio"))
 
 
 @app.route("/diagnostics", methods=["GET", "POST"])

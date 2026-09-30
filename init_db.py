@@ -50,8 +50,22 @@ CREATE TABLE IF NOT EXISTS signals (
     FOREIGN KEY(asset_id) REFERENCES assets(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS positions (
+    id INTEGER PRIMARY KEY,
+    asset_id INTEGER REFERENCES assets(id) ON DELETE CASCADE,
+    side TEXT CHECK(side IN ('long', 'short')),
+    entry_price REAL NOT NULL,
+    quantity REAL NOT NULL,
+    entry_date TEXT NOT NULL,
+    exit_price REAL,
+    exit_date TEXT,
+    status TEXT DEFAULT 'open' CHECK(status IN ('open', 'closed')),
+    notes TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_prices_asset_ts ON prices(asset_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_signals_ts ON signals(timestamp);
+CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
 """
 
 
