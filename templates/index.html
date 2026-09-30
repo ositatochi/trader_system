@@ -8,6 +8,7 @@
         <strong>{{ s.symbol }}</strong>
         <span class="badge badge-stock">{{ s.exchange }}</span>
         <span class="signal-{{ s.signal }}">{{ s.signal|upper }}</span>
+        <span class="confidence-pill {{ 'confidence-high' if (s.confidence or 0) >= 75 else 'confidence-mid' if (s.confidence or 0) >= 50 else 'confidence-low' }}">{{ s.confidence or 0 }}% confidence</span>
       </div>
       <div>Entry: {{ s.currency }} {{ "%.2f"|format(s.entry_price) }} | SL: {{ s.currency }} {{ "%.2f"|format(s.stop_loss) }} | TP: {{ s.currency }} {{ "%.2f"|format(s.take_profit) }}</div>
       <div class="muted small">{{ s.reason }}</div>
@@ -26,6 +27,7 @@
         <strong>{{ s.symbol }}</strong>
         <span class="badge badge-crypto">{{ s.exchange }}</span>
         <span class="signal-{{ s.signal }}">{{ s.signal|upper }}</span>
+        <span class="confidence-pill {{ 'confidence-high' if (s.confidence or 0) >= 75 else 'confidence-mid' if (s.confidence or 0) >= 50 else 'confidence-low' }}">{{ s.confidence or 0 }}% confidence</span>
       </div>
       <div>Entry: {{ s.currency }} {{ "%.2f"|format(s.entry_price) }} | SL: {{ s.currency }} {{ "%.2f"|format(s.stop_loss) }} | TP: {{ s.currency }} {{ "%.2f"|format(s.take_profit) }}</div>
       <div class="muted small">{{ s.reason }}</div>

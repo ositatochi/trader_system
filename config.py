@@ -24,3 +24,5 @@ SIGNAL_RULES = {
     "stock": {"stop_loss_pct": 3.0, "take_profit_pct": 6.0, "min_volume": 100000},
     "crypto": {"stop_loss_pct": 2.0, "take_profit_pct": 5.0, "min_volume": 0},
 }
+
+ENABLED_STRATEGIES = ["ema_cross", "macd_trend", "bollinger_break"]

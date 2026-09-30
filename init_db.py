@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS signals (
     take_profit REAL,
     reason TEXT,
     notified INTEGER DEFAULT 0,
+    confidence INTEGER DEFAULT 0,
+    strategy TEXT,
+    strategies_json TEXT,
     FOREIGN KEY(asset_id) REFERENCES assets(id) ON DELETE CASCADE
 );
 
@@ -73,6 +76,15 @@ def main():
     conn = db.get_conn()
     with conn:
         conn.executescript(SCHEMA)
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(signals)")}
+        migrations = {
+            "confidence": "INTEGER DEFAULT 0",
+            "strategy": "TEXT",
+            "strategies_json": "TEXT",
+        }
+        for name, declaration in migrations.items():
+            if name not in columns:
+                conn.execute(f"ALTER TABLE signals ADD COLUMN {name} {declaration}")
     conn.close()
     print("DB initialized.")
 
