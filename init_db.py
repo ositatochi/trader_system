@@ -66,9 +66,21 @@ CREATE TABLE IF NOT EXISTS positions (
     notes TEXT
 );
 
+CREATE TABLE IF NOT EXISTS news_cache (
+    id INTEGER PRIMARY KEY,
+    asset_id INTEGER,
+    title TEXT,
+    link TEXT UNIQUE,
+    published TEXT,
+    sentiment TEXT,
+    fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(asset_id) REFERENCES assets(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_prices_asset_ts ON prices(asset_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_signals_ts ON signals(timestamp);
 CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
+CREATE INDEX IF NOT EXISTS idx_news_asset_fetched ON news_cache(asset_id, fetched_at);
 """
 
 

@@ -32,6 +32,11 @@
   {% endif %}
 </div>
 
+<section class="card news-card">
+  <h3>Latest News</h3>
+  <ul id="asset-news" class="news-list"><li class="muted">Loading news...</li></ul>
+</section>
+
 <h3>Signal History</h3>
 {% if signals %}
   <div class="table-wrap"><table>
@@ -65,4 +70,43 @@
 </table></div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
 <script src="{{ url_for('static', filename='charts.js') }}" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const list = document.getElementById("asset-news");
+    try {
+      const response = await fetch("/api/asset/{{ asset.id }}/news");
+      if (!response.ok) throw new Error("News is unavailable");
+      const items = await response.json();
+      list.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement("li");
+        empty.className = "muted";
+        empty.textContent = "No matching news yet. News refreshes with the daily scheduler.";
+        list.append(empty);
+        return;
+      }
+      for (const item of items) {
+        const row = document.createElement("li");
+        const dot = document.createElement("span");
+        dot.className = `sentiment-dot sentiment-${item.sentiment}`;
+        dot.setAttribute("aria-label", item.sentiment);
+        const link = document.createElement("a");
+        link.href = item.link;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = item.title;
+        row.append(dot, link);
+        if (item.published) {
+          const date = document.createElement("span");
+          date.className = "muted small";
+          date.textContent = ` ${item.published}`;
+          row.append(date);
+        }
+        list.append(row);
+      }
+    } catch (_) {
+      list.textContent = "News could not be loaded.";
+    }
+  });
+</script>
 {% endblock %}

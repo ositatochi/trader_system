@@ -12,6 +12,7 @@ import backtest as backtest_service
 import config
 import db
 import diagnostics
+import news
 import scheduler
 
 app = Flask(__name__)
@@ -218,6 +219,19 @@ def asset_series(asset_id):
             "volume": [row["volume"] for row in rows],
         }
     )
+
+
+@app.route("/api/asset/<int:asset_id>/news")
+def asset_news(asset_id):
+    with db.get_conn() as conn:
+        asset = conn.execute("SELECT id FROM assets WHERE id = ?", (asset_id,)).fetchone()
+        if asset is None:
+            abort(404)
+        items = conn.execute(
+            "SELECT title, link, published, sentiment FROM news_cache WHERE asset_id = ? ORDER BY fetched_at DESC, id DESC LIMIT 10",
+            (asset_id,),
+        ).fetchall()
+    return jsonify([dict(item) for item in items])
 
 
 @app.route("/signals")

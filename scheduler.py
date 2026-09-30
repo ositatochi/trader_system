@@ -3,6 +3,7 @@ import adapters.ngx
 import alerter
 import analyzer
 import config
+import news
 
 
 def run_daily():
@@ -11,6 +12,7 @@ def run_daily():
         ("Crypto", lambda: adapters.crypto.fetch_prices(config.CRYPTO_WATCHLIST)),
         ("Analyzer", analyzer.analyze_all),
         ("Alerter", alerter.send_pending_alerts),
+        ("News", news.refresh_news_for_assets),
     )
     for name, stage in stages:
         print(f"[{name}] Starting")
