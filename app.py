@@ -11,6 +11,7 @@ from flask import Flask, Response, abort, flash, jsonify, redirect, render_templ
 import adapters.crypto
 import adapters.ngx
 import analyzer
+import analytics as analytics_service
 import backtest as backtest_service
 import config
 import db
@@ -54,6 +55,17 @@ def overview_page():
 @app.route("/api/overview")
 def overview_api():
     return jsonify(overview_service.market_overview())
+
+
+@app.route("/analytics")
+def analytics_page():
+    result = analytics_service.compute_metrics(request.args.get("days", 30, type=int))
+    return render_template("analytics.html", result=result)
+
+
+@app.route("/api/analytics")
+def analytics_api():
+    return jsonify(analytics_service.compute_metrics(request.args.get("days", 30, type=int)))
 
 
 @app.route("/assets")

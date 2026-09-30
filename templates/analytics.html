@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Signal Performance</h2>
+<form action="/analytics" method="GET" class="filter-bar">
+  <label>Evaluation window<select name="days">{% for option in (7,14,30,60,90,180,365) %}<option value="{{ option }}" {{ "selected" if result.days == option else "" }}>{{ option }} days</option>{% endfor %}</select></label>
+  <button class="btn primary" type="submit">Update</button>
+</form>
+<p class="muted">Signal-quality metric: direction of subsequent price movement within {{ result.days }} days. This is not a live P&amp;L backtest; signals without post-signal bars are excluded from win-rate denominators.</p>
+{% if result.strategies %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Strategy</th><th>Signals</th><th>Evaluated</th><th>Win rate</th><th>Avg move %</th><th>Best %</th><th>Worst %</th></tr></thead>
+  <tbody>{% for item in result.strategies %}
+    <tr><td>{{ item.strategy.replace('_', ' ')|title }}</td><td>{{ item.signals }}</td><td>{{ item.evaluated }}</td><td>{{ "%.1f"|format(item.win_rate) }}%</td><td>{{ "%+.2f"|format(item.avg_move) }}</td><td>{{ "%+.2f"|format(item.best) }}</td><td>{{ "%+.2f"|format(item.worst) }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+<div class="chart-panel"><canvas id="analytics-chart" aria-label="Signal win rates by strategy"></canvas></div>
+<script id="analytics-data" type="application/json">{{ result.strategies|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
+<script defer>
+  document.addEventListener("DOMContentLoaded", () => {
+    const values = JSON.parse(document.getElementById("analytics-data").textContent);
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+    new Chart(document.getElementById("analytics-chart"), {
+      type: "bar",
+      data: { labels: values.map((item) => item.strategy.replaceAll("_", " ")), datasets: [{ label: "Win rate %", data: values.map((item) => item.win_rate), backgroundColor: accent }] },
+      options: { responsive: true, scales: { y: { min: 0, max: 100 } } },
+    });
+  });
+</script>
+{% else %}
+<p class="muted">No strategy signals to evaluate yet. <a href="/watchlist">Review your watchlist</a> and run refresh.</p>
+{% endif %}
+{% endblock %}
