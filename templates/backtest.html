@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Backtest</h2>
+{% if assets %}
+<form action="/backtest/run" method="POST" class="form-grid">
+  <label>Asset<select name="asset_id" required>{% for asset in assets %}<option value="{{ asset.id }}" {{ "selected" if asset.id == selected_asset else "" }}>{{ asset.symbol }} ({{ asset.asset_type }})</option>{% endfor %}</select></label>
+  <label>Strategy<select name="strategy" required>{% for name in strategies %}<option value="{{ name }}" {{ "selected" if name == selected_strategy else "" }}>{{ name.replace('_', ' ')|title }}</option>{% endfor %}</select></label>
+  <label>From<input name="start_date" type="date" value="{{ request.args.get('start_date', '') }}"></label>
+  <label>To<input name="end_date" type="date" value="{{ request.args.get('end_date', '') }}"></label>
+  <button class="btn primary" type="submit">Run backtest</button>
+</form>
+{% else %}<p class="muted">No assets available to backtest. <a href="/watchlist">Add one to your watchlist</a>.</p>{% endif %}
+
+{% if result %}
+<h3>{{ result.symbol }} · {{ result.strategy.replace('_', ' ')|title }}</h3>
+<section class="summary-grid">
+  <div class="summary-item"><span>Total trades</span><strong>{{ result.total_trades }}</strong></div>
+  <div class="summary-item"><span>Win rate</span><strong>{{ "%.2f"|format(result.win_rate) }}%</strong></div>
+  <div class="summary-item"><span>Average return</span><strong>{{ "%.2f"|format(result.avg_return) }}%</strong></div>
+  <div class="summary-item"><span>Max drawdown</span><strong>{{ "%.2f"|format(result.max_drawdown) }}%</strong></div>
+  <div class="summary-item"><span>Sharpe</span><strong>{{ "%.2f"|format(result.sharpe) }}</strong></div>
+</section>
+<div class="chart-panel"><canvas id="equity-chart" aria-label="Backtest equity curve"></canvas></div>
+<script id="equity-data" type="application/json">{{ result.equity_curve|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
+<script defer>
+  document.addEventListener("DOMContentLoaded", () => {
+    const canvas = document.getElementById("equity-chart");
+    const points = JSON.parse(document.getElementById("equity-data").textContent);
+    const styles = getComputedStyle(document.documentElement);
+    new Chart(canvas, {
+      type: "line",
+      data: { labels: points.map((point) => point.timestamp), datasets: [{ label: "Equity", data: points.map((point) => point.equity), borderColor: styles.getPropertyValue("--accent").trim(), pointRadius: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false },
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

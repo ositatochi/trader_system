@@ -7,6 +7,8 @@ from flask import Flask, abort, flash, jsonify, redirect, render_template, reque
 
 import adapters.crypto
 import adapters.ngx
+import analyzer
+import backtest as backtest_service
 import config
 import db
 import diagnostics
@@ -117,6 +119,52 @@ def watchlist_delete(asset_id):
         conn.execute("DELETE FROM assets WHERE id = ?", (asset_id,))
     flash("Asset deleted.", "success")
     return redirect(url_for("watchlist"))
+
+
+@app.route("/backtest", methods=["GET"])
+def backtest_page():
+    with db.get_conn() as conn:
+        assets = conn.execute("SELECT id, symbol, asset_type FROM assets ORDER BY symbol").fetchall()
+    result = None
+    asset_id = request.args.get("asset_id", type=int)
+    strategy_name = request.args.get("strategy", config.ENABLED_STRATEGIES[0])
+    if asset_id:
+        try:
+            result = backtest_service.run_backtest(
+                asset_id, strategy_name, request.args.get("start_date"), request.args.get("end_date")
+            )
+        except ValueError as error:
+            flash(str(error), "error")
+    return render_template(
+        "backtest.html", assets=assets, strategies=analyzer.STRATEGIES,
+        selected_asset=asset_id, selected_strategy=strategy_name, result=result,
+    )
+
+
+@app.route("/backtest/run", methods=["POST"])
+def backtest_run():
+    return redirect(url_for(
+        "backtest_page",
+        asset_id=request.form.get("asset_id", type=int),
+        strategy=request.form.get("strategy"),
+        start_date=request.form.get("start_date") or None,
+        end_date=request.form.get("end_date") or None,
+    ))
+
+
+@app.route("/api/backtest")
+def backtest_api():
+    asset_id = request.args.get("asset_id", type=int)
+    strategy_name = request.args.get("strategy", "")
+    if not asset_id:
+        return jsonify({"error": "asset_id is required"}), 400
+    try:
+        result = backtest_service.run_backtest(
+            asset_id, strategy_name, request.args.get("start_date"), request.args.get("end_date")
+        )
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    return jsonify(result)
 
 
 @app.route("/asset/<int:asset_id>")
