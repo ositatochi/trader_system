@@ -4,7 +4,7 @@
 {% if stock_signals %}
   {% for s in stock_signals %}
     <div class="card">
-      <div class="row header-row">
+      <div class="row header-row stack-on-mobile">
         <strong>{{ s.symbol }}</strong>
         <span class="badge badge-stock">{{ s.exchange }}</span>
         <span class="signal-{{ s.signal }}">{{ s.signal|upper }}</span>
@@ -22,7 +22,7 @@
 {% if crypto_signals %}
   {% for s in crypto_signals %}
     <div class="card">
-      <div class="row header-row">
+      <div class="row header-row stack-on-mobile">
         <strong>{{ s.symbol }}</strong>
         <span class="badge badge-crypto">{{ s.exchange }}</span>
         <span class="signal-{{ s.signal }}">{{ s.signal|upper }}</span>

@@ -3,24 +3,24 @@
 <h2>Diagnostics</h2>
 
 <h3>Environment</h3>
-<table>
+<div class="table-wrap"><table>
   <thead><tr><th>Variable</th><th>Status</th></tr></thead>
   <tbody>
     {% for name, is_set in env.items() %}
     <tr><td>{{ name }}</td><td>{{ "Set" if is_set else "Missing" }}</td></tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 
 <h3>Database Rows</h3>
-<table>
+<div class="table-wrap"><table>
   <thead><tr><th>Table</th><th>Rows</th></tr></thead>
   <tbody>
     {% for table, count in counts.items() %}
     <tr><td>{{ table }}</td><td>{{ count }}</td></tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 
 <form action="/diagnostics" method="POST">
   <button type="submit" class="btn primary">Run Diagnostics</button>

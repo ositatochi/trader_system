@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>All Signals History</h2>
-<table>
+<div class="table-wrap"><table>
   <thead><tr><th>Timestamp</th><th>Symbol</th><th>Type</th><th>Signal</th><th>Entry</th><th>SL</th><th>TP</th><th>Notified</th></tr></thead>
   <tbody>
     {% for s in signals %}
@@ -14,5 +14,5 @@
     </tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 {% endblock %}

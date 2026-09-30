@@ -19,7 +19,7 @@
 
 <h3>Signal History</h3>
 {% if signals %}
-  <table>
+  <div class="table-wrap"><table>
     <thead><tr><th>Time</th><th>Signal</th><th>Entry</th><th>SL</th><th>TP</th><th>Reason</th></tr></thead>
     <tbody>
       {% for s in signals %}
@@ -30,13 +30,13 @@
       </tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 {% else %}
   <p class="muted">No signals generated yet.</p>
 {% endif %}
 
 <h3 class="section-heading">Price History (Last 30)</h3>
-<table>
+<div class="table-wrap"><table>
   <thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead>
   <tbody>
     {% for p in prices %}
@@ -47,5 +47,5 @@
     </tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 {% endblock %}

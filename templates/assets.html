@@ -3,7 +3,7 @@
 <h2>Assets</h2>
 
 <h3>Stocks (NGX)</h3>
-<table>
+<div class="table-wrap"><table>
   <thead><tr><th>Symbol</th><th>Exchange</th><th>Currency</th><th>Last Close</th></tr></thead>
   <tbody>
     {% for a in stocks %}
@@ -14,10 +14,10 @@
     </tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 
 <h3 class="section-heading">Crypto</h3>
-<table>
+<div class="table-wrap"><table>
   <thead><tr><th>Symbol</th><th>Exchange</th><th>Currency</th><th>Last Close</th></tr></thead>
   <tbody>
     {% for a in cryptos %}
@@ -28,5 +28,5 @@
     </tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 {% endblock %}
