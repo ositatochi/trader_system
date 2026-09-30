@@ -2,7 +2,7 @@ from pathlib import Path
 import os
 import secrets
 
-from flask import Flask, abort, flash, redirect, render_template, request, send_from_directory, url_for
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 
 import adapters.crypto
 import adapters.ngx
@@ -74,6 +74,36 @@ def asset_detail(asset_id):
         ).fetchall()
     return render_template(
         "asset.html", asset=asset, prices=prices, indicators=indicators, signals=signals
+    )
+
+
+@app.route("/api/asset/<int:asset_id>/series")
+def asset_series(asset_id):
+    with db.get_conn() as conn:
+        asset = conn.execute("SELECT id FROM assets WHERE id = ?", (asset_id,)).fetchone()
+        if asset is None:
+            abort(404)
+        rows = conn.execute(
+            """
+            SELECT p.timestamp, p.close, p.volume,
+                   i.ema_20, i.ema_50, i.rsi_14
+            FROM prices p
+            LEFT JOIN indicators i
+              ON i.asset_id = p.asset_id AND i.timestamp = p.timestamp
+            WHERE p.asset_id = ?
+            ORDER BY p.timestamp ASC
+            """,
+            (asset_id,),
+        ).fetchall()
+    return jsonify(
+        {
+            "timestamps": [row["timestamp"] for row in rows],
+            "close": [row["close"] for row in rows],
+            "ema20": [row["ema_20"] for row in rows],
+            "ema50": [row["ema_50"] for row in rows],
+            "rsi14": [row["rsi_14"] for row in rows],
+            "volume": [row["volume"] for row in rows],
+        }
     )
 
 

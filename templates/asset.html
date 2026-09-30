@@ -2,6 +2,21 @@
 {% block content %}
 <h2>{{ asset.symbol }} <span class="badge badge-{{ asset.asset_type }}">{{ asset.exchange }}</span></h2>
 
+<section class="chart-stack" data-asset-id="{{ asset.id }}">
+  <div class="chart-panel">
+    <h3>Price and moving averages</h3>
+    <canvas id="price-chart" aria-label="Close price, EMA 20, and EMA 50 chart"></canvas>
+  </div>
+  <div class="chart-panel">
+    <h3>RSI (14)</h3>
+    <canvas id="rsi-chart" aria-label="RSI 14 chart with 30 and 70 thresholds"></canvas>
+  </div>
+  <div class="chart-panel">
+    <h3>Volume</h3>
+    <canvas id="volume-chart" aria-label="Trading volume chart"></canvas>
+  </div>
+</section>
+
 <div class="card">
   <h3>Latest Indicators</h3>
   {% if indicators %}
@@ -48,4 +63,6 @@
     {% endfor %}
   </tbody>
 </table></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
+<script src="{{ url_for('static', filename='charts.js') }}" defer></script>
 {% endblock %}
